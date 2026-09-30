@@ -65,7 +65,7 @@ game.destroy();
 | `soundButton` | `true` | ✔ | nút loa tròn ở góc trên phải, cạnh ảnh nhân vật; bấm để tắt/bật tiếng, lúc nào cũng bấm được và không tính là cú nhảy. Tắt đi nếu app có nút riêng |
 | `onMutedChange(muted)` | | ✔ | gọi khi người chơi bấm nút loa trong canvas (để app đồng bộ trạng thái) |
 | `characterButton` | `true` | ✔ | ảnh nhân vật ở góc trên phải của canvas, bấm để mở bảng chọn. Tắt đi nếu app tự làm nút (§4c) |
-| `labels` | tiếng Anh | ✔ | `start, gameOver, restart, score, best, newRecord, metres, chooseCharacter, title, mute, unmute`; `title` là dòng chữ nhỏ dưới bộ đếm xu ở giữa HUD (ví dụ tên game), mặc định để trống; package không có i18n riêng, app tự dịch rồi truyền vào |
+| `labels` | tiếng Anh | ✔ | `start, gameOver, restart, score, best, newRecord, metres, chooseCharacter, title, logo, mute, unmute`; `title` là dòng chữ nhỏ dưới bộ đếm xu ở giữa HUD (ví dụ tên game), mặc định để trống; `logo` là chữ trên bảng tiêu đề hiện trước mỗi lượt (trượt lên khi bắt đầu), mặc định `'SKYLINE'`, font pixel chỉ có A–Z, 0–9 và `. ! - '` (chữ thường tự viết hoa), chuỗi rỗng thì bỏ bảng, chỉ hiện lời nhắc; package không có i18n riêng, app tự dịch rồi truyền vào |
 | `keyboardTarget` | `'window'` | — | `'element'` = chỉ nghe Space khi khung game đang được focus |
 | `autoPauseOnHidden` | `true` | — | tạm dừng khi tab bị ẩn |
 | `onStats(stats)` | | ✔ | gọi khi điểm, coin, mét, trạng thái hoặc sức mạnh thay đổi (khoảng vài lần/giây, không phải mỗi frame) |
@@ -84,6 +84,8 @@ theme: { sky: ['#0b1020', '#3b2d6b'], trees: null, blocks: { O: '#1070A0' } }
 |---|---|
 | `sky` | một màu, gradient dọc `[trên, dưới]`, hoặc `null` (canvas trong suốt, lộ nền của app) |
 | `mountains` · `clouds` · `hills` · `bushes` | màu từng lớp parallax; `null` để ẩn lớp đó |
+| `sceneryOutline` | màu viền và đốm của mây, đồi, bụi cỏ (kiểu NES); `null` để vẽ phẳng |
+| `cloudShade` | dải màu nhạt dưới đáy mây; `null` để bỏ |
 | `trees` | `{ leaf, leafLight, trunk }` hoặc `null` |
 | `pipe` | `{ body, light, dark, outline }` |
 | `blocks` | đổi màu sprite khối: `O` thân gạch/đất, `H` viền sáng, `K` viền tối, `Y` mặt khối ?, `W` viền khối ? |

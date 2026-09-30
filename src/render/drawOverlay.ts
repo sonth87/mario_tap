@@ -4,6 +4,7 @@ import type { GameTheme } from '../core/theme';
 import type { GameStats } from '../core/types';
 import type { GameState } from '../game/state';
 import { drawSprite } from './atlas';
+import { drawPixelText, GLYPH_H, pixelTextWidth } from './pixelFont';
 import { COIN } from './sprites/items';
 import { HUD_MARGIN_TOP, HUD_MARGIN_X, hudTextRight } from './uiLayout';
 
@@ -89,11 +90,76 @@ function panel(ctx: CanvasRenderingContext2D, theme: GameTheme, cx: number, cy: 
   ctx.fill();
 }
 
-/** Start prompt, game-over card. */
+/** Title board: top edge while shown, frames it takes to slide up and out once a run starts. */
+const BOARD_TOP = 28;
+export const BOARD_SLIDE_FRAMES = 40;
+const BOARD = { fill: '#C84C0C', light: '#FCBCB0', dark: '#000000' };
+
+interface BoardBox {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  /** World px per font pixel. */
+  cell: number;
+}
+
+function boardBox(viewWidth: number, logo: string): BoardBox {
+  const units = pixelTextWidth(logo);
+  // Letters are 3 px per font pixel (2 or 1 when the view is too narrow for the name).
+  const cell = Math.max(1, Math.min(3, Math.floor((viewWidth - 48) / units)));
+  const w = units * cell + 28;
+  const h = GLYPH_H * cell * 1.34 + 22;
+  return { x: Math.round((viewWidth - w) / 2), y: BOARD_TOP, w: Math.round(w), h: Math.round(h), cell };
+}
+
+/** The title sign (like the 1985 logo board): rivets, bevel, drop shadow and chunky shadowed letters. */
+function drawBoard(ctx: CanvasRenderingContext2D, b: BoardBox, logo: string): void {
+  const { x, y, w, h, cell } = b;
+  ctx.fillStyle = BOARD.dark;
+  ctx.fillRect(x + 2, y + 2, w, h);
+  ctx.fillStyle = BOARD.light;
+  ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = BOARD.fill;
+  ctx.fillRect(x + 1, y + 1, w - 2, h - 2);
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  ctx.fillRect(x + 1, y + h - 2, w - 2, 1);
+  ctx.fillRect(x + w - 2, y + 1, 1, h - 2);
+  ctx.fillStyle = BOARD.light;
+  for (const [rx, ry] of [[4, 4], [w - 6, 4], [4, h - 6], [w - 6, h - 6]]) {
+    ctx.fillRect(x + rx, y + ry, 2, 2);
+    ctx.fillStyle = BOARD.dark;
+    ctx.fillRect(x + rx + 1, y + ry + 1, 1, 1);
+    ctx.fillStyle = BOARD.light;
+  }
+  const ch = Math.round(cell * 1.34);
+  const tx = x + Math.round((w - pixelTextWidth(logo) * cell) / 2);
+  const ty = y + Math.round((h - GLYPH_H * ch) / 2);
+  ctx.fillStyle = BOARD.dark;
+  drawPixelText(ctx, logo, tx + cell, ty + cell, cell, ch);
+  ctx.fillStyle = BOARD.light;
+  drawPixelText(ctx, logo, tx, ty, cell, ch);
+}
+
+/** Start prompt with the title board, board sliding away as a run starts, game-over card. */
 export function drawPrompts(ctx: CanvasRenderingContext2D, s: GameState, stats: GameStats, labels: GameLabels, theme: GameTheme): void {
   const cx = s.viewWidth / 2;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
+  if (labels.logo && (s.status === 'idle' || (s.status === 'playing' && s.statusTimer < BOARD_SLIDE_FRAMES))) {
+    const b = boardBox(s.viewWidth, labels.logo);
+    if (s.status === 'playing') {
+      // Ease-in slide up and out of the top edge.
+      const t = s.statusTimer / BOARD_SLIDE_FRAMES;
+      b.y = Math.round(BOARD_TOP - t * t * (BOARD_TOP + b.h + 4));
+    }
+    drawBoard(ctx, b, labels.logo);
+    if (s.status === 'playing') return;
+    const below = b.y + b.h + 14;
+    if (Math.floor(s.frame / 30) % 2 === 0) text(ctx, theme, labels.start, cx, below, 8);
+    if (stats.best.score > 0) text(ctx, theme, `${labels.best} ${stats.best.score}`, cx, below + 13, 7, theme.textAccent);
+    return;
+  }
   if (s.status === 'idle') {
     const blink = Math.floor(s.frame / 30) % 2 === 0;
     const cy = VIEW_HEIGHT * 0.34;

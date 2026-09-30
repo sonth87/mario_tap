@@ -18,9 +18,7 @@ const BASE: Palette = {
 
 export const PALETTES = {
   base: BASE,
-  /** Fire Mario: white cap & shirt, red overalls. */
-  fire: { ...BASE, R: '#F8F8F8', B: '#E52521' },
-  /** Star-power colour cycle. */
+  /** Fire-flower colour cycle. */
   star1: { ...BASE, R: '#00A800', B: '#F8D800', D: '#C84C0C' },
   star2: { ...BASE, R: '#000000', B: '#C84C0C', S: '#F8B878' },
   star3: { ...BASE, R: '#F8F8F8', B: '#E52521', D: '#00A800' },

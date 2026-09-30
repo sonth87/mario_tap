@@ -16,26 +16,11 @@ export const SMALL_LEGS = {
 };
 
 export const BIG_LEGS = {
-  stand: [
-    '....ppp..ppp....', '....ppp..ppp....', '....ppp..ppp....', '....ppp..ppp....',
-    '...dddd..dddd...', '..ddddd..ddddd..', '..ddddd..ddddd..', '..ddddd..ddddd..',
-  ],
-  run0: [
-    '...ppp....ppp...', '..ppp......ppp..', '..ppp......ppp..', '.ppp........ppp.',
-    '.ddd........ddd.', 'dddd.......dddd.', 'dddd.......dddd.', '.ddd........ddd.',
-  ],
-  run1: [
-    '.....pppppp.....', '.....ppp.ppp....', '.....ppp.ppp....', '.....ppp.ppp....',
-    '....dddd.dddd...', '...ddddd.ddddd..', '...ddddd.ddddd..', '...dddd...dddd..',
-  ],
-  run2: [
-    '....ppp...ppp...', '...ppp.....ppp..', '..ppp.......ppp.', '..ppp.......ppp.',
-    '..ddd.......ddd.', '.dddd.......dddd', '.dddd.......dddd', '..ddd........ddd',
-  ],
-  jump: [
-    '...ppp....ppp...', '..ppp.....pppp..', '.ppp......dddd..', '.ppp......dddd..',
-    '.ddd............', 'dddd............', 'dddd............', '.ddd............',
-  ],
+  stand: ['....ppp..ppp....', '....ppp..ppp....', '....ppp..ppp....', '...dddd..dddd...', '..ddddd..ddddd..', '..ddddd..ddddd..'],
+  run0: ['...ppp....ppp...', '..ppp......ppp..', '.ppp........ppp.', '.ddd.......dddd.', 'dddd.......ddddd', 'dddd........dddd'],
+  run1: ['.....pppppp.....', '.....ppp.ppp....', '.....ppp.ppp....', '....dddd.dddd...', '...ddddd.ddddd..', '...dddd...dddd..'],
+  run2: ['....ppp...ppp...', '...ppp.....ppp..', '..ppp.......ppp.', '..ddd......dddd.', '.dddd......ddddd', '.dddd.......dddd'],
+  jump: ['...ppp....ppp...', '..ppp.....pppp..', '.ppp......dddd..', '.ddd......dddd..', 'dddd............', 'dddd............'],
 };
 
 export type LegSet = Record<'stand' | 'run0' | 'run1' | 'run2' | 'jump', string[]>;
@@ -94,6 +79,8 @@ const LINK_BIG_TORSO = [
   '.....GGGGGGGG...',
   '....GGGGGGGGGG..',
   '....GGGGGGGGGG..',
+  '....GGGGGGGGGG..',
+  '...GGGGGGGGGGG..',
   '...GGGLGGGGLGG..',
   '...GGLLGGGGLLG..',
   '....WWW...WWW...',
@@ -152,14 +139,18 @@ const TOAD_BIG_BODY = [
   '....BBYYYYBB....',
   '...BBBBYYBBBB...',
   '..SBBBBYYBBBBS..',
+  '..SBBBBBBBBBBS..',
   '..SSBBBBBBBBSS..',
   '..SS.BBBBBB.SS..',
   '.....WWWWWW.....',
   '....WWWWWWWW....',
   '....WWWWWWWW....',
+  '....WWWWWWWW....',
   '....WWW..WWW....',
 ];
-const TOAD_BIG_BODY_REACH = ['....BBYYYYBB.SS.', '...BBBBYYBBBBSS.', '..SBBBBYYBBBBS..', '..SSBBBBBBBB....', ...TOAD_BIG_BODY.slice(4)];
+const TOAD_BIG_BODY_REACH = [
+  '....BBYYYYBB.SS.', '...BBBBYYBBBBSS.', '..SBBBBYYBBBBS..', '..SBBBBBBBBBB...', '..SSBBBBBBBB....', ...TOAD_BIG_BODY.slice(5),
+];
 
 export const TOAD: CharacterSprites = hero(
   [...TOAD_HEAD, ...TOAD_BODY],

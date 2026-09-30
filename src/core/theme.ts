@@ -18,6 +18,10 @@ export interface GameTheme {
   hills: string | null;
   trees: TreeColors | null;
   bushes: string | null;
+  /** Edge / spot colour of clouds, hills and bushes (the NES look); null draws them flat. */
+  sceneryOutline: string | null;
+  /** Pale band along the underside of clouds; null for none. */
+  cloudShade: string | null;
   pipe: { body: string; light: string; dark: string; outline: string };
   /**
    * Recolours block sprites: O = brick / ground body, H = ground top & stair highlight,
@@ -42,9 +46,11 @@ const DAY: GameTheme = {
   sky: ['#5C94FC', '#A4C8FF'],
   mountains: '#8FB8F0',
   clouds: '#FFFFFF',
-  hills: '#5DB847',
+  hills: '#00A800',
   trees: { leaf: '#2E8B2E', leafLight: '#58C048', trunk: '#8B5A2B' },
-  bushes: '#3AA535',
+  bushes: '#80D010',
+  sceneryOutline: '#000000',
+  cloudShade: '#A4E4FC',
   pipe: { body: '#00A800', light: '#80D010', dark: '#005000', outline: '#000000' },
   blocks: {},
   cloudPlatform: { fill: '#FFFFFF', shade: '#BEE0FF', outline: '#1B2A4A' },
@@ -66,6 +72,8 @@ export const THEMES: Record<ThemeName, GameTheme> = {
     hills: '#8C5A7A',
     trees: { leaf: '#3F3A6B', leafLight: '#6B5E9E', trunk: '#3B2433' },
     bushes: '#54406E',
+    sceneryOutline: '#1E1030',
+    cloudShade: '#F4B8A8',
   },
   night: {
     ...DAY,
@@ -75,6 +83,8 @@ export const THEMES: Record<ThemeName, GameTheme> = {
     hills: '#16324A',
     trees: { leaf: '#0F3B2E', leafLight: '#1D5E47', trunk: '#2B1E14' },
     bushes: '#12402F',
+    sceneryOutline: '#03061A',
+    cloudShade: null,
     blocks: { O: '#8C3A12', H: '#B87850' },
     cloudPlatform: { fill: '#C8D0F0', shade: '#7F8BC0', outline: '#0B1030' },
   },
@@ -86,6 +96,8 @@ export const THEMES: Record<ThemeName, GameTheme> = {
     hills: '#101830',
     trees: null,
     bushes: '#0A2A30',
+    sceneryOutline: null,
+    cloudShade: null,
     blocks: { O: '#1070A0', H: '#60B0D0', K: '#001828' },
     pipe: { body: '#00A8A8', light: '#80E8E8', dark: '#005050', outline: '#000000' },
   },
@@ -98,6 +110,8 @@ export const THEMES: Record<ThemeName, GameTheme> = {
     hills: 'rgba(0,168,0,0.28)',
     trees: { leaf: 'rgba(30,130,50,0.45)', leafLight: 'rgba(90,190,80,0.45)', trunk: 'rgba(110,70,30,0.5)' },
     bushes: 'rgba(40,160,50,0.4)',
+    sceneryOutline: 'rgba(10,50,30,0.45)',
+    cloudShade: 'rgba(190,225,255,0.6)',
   },
 };
 

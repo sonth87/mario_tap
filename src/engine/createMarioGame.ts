@@ -114,10 +114,9 @@ export function createMarioGame(host: HTMLElement, options: MarioGameOptions = {
     options.onStats?.(s);
   }
 
-  function newRun(status: 'idle' | 'playing'): void {
+  function newRun(): void {
     seed = randomSeed();
     state = createState(seed, viewport.viewWidth);
-    state.status = status;
     newRecord = false;
   }
 
@@ -135,8 +134,8 @@ export function createMarioGame(host: HTMLElement, options: MarioGameOptions = {
     const pressed = pendingPress;
     pendingPress = false;
     if (state.status === 'over' && pressed && state.statusTimer > GAME_OVER_LOCK_FRAMES) {
-      newRun('playing');
-      state.events = ['start'];
+      // Back to the title screen (fresh level, board up); the next press starts the run.
+      newRun();
     } else {
       step(state, pressed);
     }
@@ -220,7 +219,7 @@ export function createMarioGame(host: HTMLElement, options: MarioGameOptions = {
     resume: () => {
       userPaused = false;
     },
-    restart: () => newRun('idle'),
+    restart: newRun,
     setMuted: (muted) => setMuted(muted, false),
     update(next) {
       if (next.muted !== undefined) setMuted(next.muted, false);

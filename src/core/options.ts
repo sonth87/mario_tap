@@ -16,6 +16,8 @@ export interface GameLabels {
   chooseCharacter: string;
   /** Small line under the coin counter (centre of the HUD); empty hides it. */
   title: string;
+  /** Name on the title board shown before each run (slides away on start); empty shows a plain prompt instead. */
+  logo: string;
   mute: string;
   unmute: string;
 }
@@ -30,6 +32,7 @@ export const DEFAULT_LABELS: GameLabels = {
   metres: 'm',
   chooseCharacter: 'CHOOSE CHARACTER',
   title: '',
+  logo: 'SKYLINE',
   mute: 'Mute sound',
   unmute: 'Unmute sound',
 };

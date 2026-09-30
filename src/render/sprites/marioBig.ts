@@ -1,120 +1,123 @@
 /**
- * Big Mario, 16×32, facing right — assembled from a shared head, a torso (two arm poses)
- * and per-frame legs, which keeps every frame consistent.
+ * Big plumber, 16×32, facing right — NES-era proportions: a large head (12 rows), a stocky torso
+ * and short legs. Assembled from a shared head, torso poses and per-frame legs so every frame
+ * stays consistent. Keys as in marioSmall.ts.
  */
 
 const HEAD = [
-  '......RRRRR.....',
-  '....RRRRRRRRR...',
-  '...RRRRRRRRRRRR.',
-  '....DDDSSDSS....',
-  '...DSDSSSDSSSS..',
-  '...DSDDSSSDSSSS.',
-  '...DDSSSSDDDDD..',
-  '.....SSSSSSSS...',
-  '......SSSSS.....',
+  '......CCCCC.....',
+  '....CCCCCCCCC...',
+  '...CCCCCCCCCCCC.',
+  '...DDDDSSSDS....',
+  '..DSSDSSSSDSSS..',
+  '..DSSDSSSSDSSSS.',
+  '..DSSDDSSSSDSSSS',
+  '..DDSSSSSDDDDDD.',
+  '...DSSSSDDDDDD..',
+  '....SSSSSSSSS...',
+  '.....SSSSSSS....',
 ];
 
 const TORSO = [
-  '.....RRBRRR.....',
-  '....RRRBRRBRR...',
-  '...RRRRBRRBRRR..',
-  '..RRRRRBBBBRRRR.',
-  '..RRRRBYBBYBRRR.',
-  '..SSRRBBBBBBRSS.',
-  '.SSSSRBBBBBBSSSS',
-  '.SSS.BBBBBBBBSSS',
-  '..S..BBBBBBBB.S.',
-  '.....BBBBBBBB...',
-  '.....BBBBBBBB...',
-  '....BBBBBBBBBB..',
+  '.....TTRTTT.....',
+  '....TTTRTTTRT...',
+  '...TTTTRTTTRTT..',
+  '..TTTTTRTTTRTTT.',
+  '..TTTTTRRRRRTTT.',
+  '.TTTTTRYRRRYRTTT',
+  '.TTTTRRRRRRRRTTT',
+  '.TTTRRRRRRRRRRTT',
+  '.SSSRRRRRRRRRSSS',
+  'SSSSRRRRRRRRRSSS',
+  'SSS.RRRRRRRRR.SS',
+  '...RRRRRRRRRRR..',
+  '...RRRRRRRRRRR..',
+  '...RRRRR.RRRRR..',
 ];
 
-const TORSO_REACH = [
-  '.....RRBRRR.SSS.',
-  '....RRRBRRBRSSS.',
-  '...RRRRBRRBRRS..',
-  '..RRRRRBBBBRRR..',
-  '..RRRRBYBBYBRR..',
-  '.SSRRRBBBBBBR...',
-  'SSSSRRBBBBBBB...',
-  'SSS..BBBBBBBB...',
-  '.S...BBBBBBBB...',
-  '.....BBBBBBBB...',
-  '.....BBBBBBBBB..',
-  '....BBBBBBBBBB..',
+/** Arms swinging (run): back hand behind the hip, front hand forward. */
+const TORSO_SWING = [
+  '.....TTRTTT.....',
+  '....TTTRTTTRT...',
+  '...TTTTRTTTRTT..',
+  '..TTTTTRTTTRTTT.',
+  '..TTTTTRRRRRTTTT',
+  '.TTTTTRYRRRYRTTT',
+  'TTTTTRRRRRRRRRTT',
+  'TTT.RRRRRRRRRRSS',
+  'SSS.RRRRRRRRRSSS',
+  'SS..RRRRRRRRRSS.',
+  '...RRRRRRRRRRR..',
+  '...RRRRRRRRRRR..',
+  '...RRRRRRRRRRR..',
+  '...RRRRR.RRRRR..',
+];
+
+/** Jump: front fist punched up past the cap (drawn in HEAD_JUMP), back arm down. */
+const HEAD_JUMP = [
+  '.............SSS',
+  '......CCCCC..SSS',
+  '....CCCCCCCCCSSS',
+  '...CCCCCCCCCCCTT',
+  '...DDDDSSSDS.TTT',
+  '..DSSDSSSSDSSTTT',
+  '..DSSDSSSSDSSSTT',
+  '..DSSDDSSSSDSSTT',
+  '..DDSSSSSDDDDDTT',
+  '...DSSSSDDDDDTT.',
+  '....SSSSSSSSTT..',
+  '.....SSSSSSSTT..',
+];
+
+const TORSO_JUMP = [
+  '....TTTRTTTRT...',
+  '...TTTTRTTTRT...',
+  '..TTTTTRRRRRT...',
+  '.TTTTTRYRRRYR...',
+  'TTTTTRRRRRRRR...',
+  'TTTTRRRRRRRRRR..',
+  'SSS.RRRRRRRRRRR.',
+  'SSS.RRRRRRRRRRRR',
+  'SS.RRRRRRRRRRRRR',
+  '..RRRRRRRR.RRRRR',
+  '..RRRRRRR...RRNN',
 ];
 
 const LEGS_STAND = [
-  '....BBBB..BBBB..',
-  '....BBBB..BBBB..',
-  '....BBB....BBB..',
-  '....BBB....BBB..',
-  '....BBB....BBB..',
-  '....BBB....BBB..',
-  '....BBB....BBB..',
-  '...DDDD....DDDD.',
-  '..DDDDD....DDDDD',
-  '..DDDDD....DDDDD',
-  '..DDDDD....DDDDD',
+  '....RRRR..RRRR..',
+  '....RRR....RRR..',
+  '...NNNN....NNNN.',
+  '..NNNNN....NNNNN',
+  '..NNNNN....NNNNN',
 ];
 
 const LEGS_RUN = [
-  [
-    '...BBBBBBBBBB...',
-    '..BBBBB..BBBBB..',
-    '..BBBB....BBBB..',
-    '.BBBB......BBB..',
-    '.BBB........BBB.',
-    'BBB.........BBB.',
-    'BBB.........BBB.',
-    'DDD........DDDD.',
-    'DDDD......DDDDD.',
-    'DDDD......DDDDD.',
-    '.DDD......DDDDD.',
-  ],
-  [
-    '....BBBBBBBB....',
-    '....BBBBBBBB....',
-    '....BBBB.BBB....',
-    '....BBB..BBB....',
-    '....BBB..BBB....',
-    '...BBB...BBB....',
-    '...BBB...BBB....',
-    '..DDDD..DDDD....',
-    '.DDDDD..DDDDD...',
-    '.DDDDD..DDDDD...',
-    '.DDDD...DDDDD...',
-  ],
-  [
-    '....BBBBBBBBB...',
-    '...BBBBB.BBBB...',
-    '...BBBB...BBB...',
-    '..BBBB....BBB...',
-    '..BBB......BBB..',
-    '.BBB.......BBB..',
-    '.BBB........BBB.',
-    '.DDD.......DDDD.',
-    'DDDD.......DDDDD',
-    'DDD........DDDDD',
-    '...........DDDDD',
-  ],
+  // Full stride.
+  ['..RRRR....RRRR..', '.RRRR......RRRN.', 'NNNN.......NNNNN', 'NNNN.......NNNNN', '.NNN........NNNN'],
+  // Passing.
+  ['.....RRRRRRR....', '....RRRR.RRR....', '...NNNN.NNNN....', '..NNNNNNNNNNN...', '...NNN..NNNNN...'],
+  // Half stride.
+  ['...RRRR...RRRR..', '..RRR.....RRRR..', '.NNNN....NNNN...', '.NNNNN...NNNNN..', '..NNN.....NNNNN.'],
 ];
 
 const LEGS_JUMP = [
-  '....BBBBBBBBBB..',
-  '...BBBBBBBBBBB..',
-  '..BBBBBB..BBBB..',
-  '.BBBBB.....BBB..',
-  '.BBBB......BBBB.',
-  'DDDD.......BBBB.',
-  'DDDD........BBB.',
-  'DDD.........DDDD',
-  'DD..........DDDD',
-  '............DDDD',
-  '................',
+  '.RRRRRR.....NNNN',
+  '.RRRRR......NNNN',
+  'RRRRR........NN.',
+  'NNNN............',
+  'NNNNN...........',
+  'NNNNN...........',
+  'NNNN............',
 ];
 
-export const BIG_STAND = [...HEAD, ...TORSO, ...LEGS_STAND];
-export const BIG_RUN = LEGS_RUN.map((legs) => [...HEAD, ...TORSO, ...legs]);
-export const BIG_JUMP = [...HEAD, ...TORSO_REACH, ...LEGS_JUMP];
+const EMPTY = '................';
+
+/** Joins parts and pads the top so the sprite is 32 rows with the feet on the bottom row. */
+function frame(...parts: string[][]): string[] {
+  const rows = parts.flat();
+  return [...Array.from({ length: 32 - rows.length }, () => EMPTY), ...rows];
+}
+
+export const BIG_STAND = frame(HEAD, TORSO, LEGS_STAND);
+export const BIG_RUN = LEGS_RUN.map((legs, i) => frame(HEAD, i === 1 ? TORSO : TORSO_SWING, legs));
+export const BIG_JUMP = frame(HEAD_JUMP, TORSO_JUMP, LEGS_JUMP);

@@ -4,7 +4,6 @@ import { BIG_JUMP, BIG_RUN, BIG_STAND } from './sprites/marioBig';
 import { SMALL_DEAD, SMALL_JUMP, SMALL_RUN, SMALL_STAND } from './sprites/marioSmall';
 import { BLONDIE } from './sprites/blondie';
 import { LINK, TOAD } from './sprites/heroes';
-import { PALETTES } from './sprites/palettes';
 import {
   PRINCESS_BIG_JUMP,
   PRINCESS_BIG_RUN,
@@ -24,7 +23,33 @@ const PRINCESS: CharacterSprites = {
   bigStand: PRINCESS_BIG_STAND, bigRun: PRINCESS_BIG_RUN, bigJump: PRINCESS_BIG_JUMP,
 };
 
-const luigi: Palette = { ...PALETTES.base, R: '#2FA84F', B: '#23329E', D: '#5A3A1A' };
+/** Plumber keys: C cap · T shirt · R overalls · D hair & moustache · N shoes · S skin · Y buttons. */
+interface PlumberColors {
+  cap: string;
+  shirt: string;
+  overalls: string;
+  hair: string;
+  shoes: string;
+  skin?: string;
+  buttons?: string;
+}
+const plumber = (c: PlumberColors): Palette => ({
+  C: c.cap, T: c.shirt, R: c.overalls, D: c.hair, N: c.shoes, S: c.skin ?? '#FCB068', Y: c.buttons ?? '#F8D800',
+});
+
+/** NES palette: red cap & overalls, olive shirt / hair / shoes. */
+const RED = '#D82800';
+const OLIVE = '#887000';
+const WHITE = '#F8F8F8';
+const mario = plumber({ cap: RED, shirt: OLIVE, overalls: RED, hair: OLIVE, shoes: OLIVE });
+/** Star-power flashes, as in the original: green / black / fire colour sets. */
+const plumberStars = [
+  plumber({ cap: '#00A800', shirt: '#C84C0C', overalls: '#00A800', hair: '#C84C0C', shoes: '#C84C0C' }),
+  plumber({ cap: '#000000', shirt: '#C84C0C', overalls: '#000000', hair: '#C84C0C', shoes: '#C84C0C', skin: '#F8B878' }),
+  plumber({ cap: WHITE, shirt: RED, overalls: WHITE, hair: RED, shoes: RED }),
+];
+
+const luigi = plumber({ cap: '#2FA84F', shirt: '#2FA84F', overalls: '#23329E', hair: '#5A3A1A', shoes: '#6B3A10' });
 
 const peach: Palette = {
   C: '#F8D800', R: '#E52521', Y: '#F8C840', S: '#FCD8A8', K: '#000000',
@@ -35,8 +60,8 @@ const zelda: Palette = {
   ...peach, R: '#3C8CF0', Y: '#C8903C', P: '#F2EEFA', Q: '#8C78C8', W: '#F8D800', B: '#E52521', D: '#6B4226',
 };
 
-const wario: Palette = { ...PALETTES.base, R: '#F8D800', B: '#7B2D8E', D: '#3B2A10', Y: '#F8F8F8' };
-const waluigi: Palette = { ...PALETTES.base, R: '#7B2D8E', B: '#1B1B3A', D: '#E07818' };
+const wario = plumber({ cap: '#F8D800', shirt: '#F8D800', overalls: '#7B2D8E', hair: '#3B2A10', shoes: '#2F8A2F', buttons: WHITE });
+const waluigi = plumber({ cap: '#7B2D8E', shirt: '#7B2D8E', overalls: '#1B1B3A', hair: '#3B2A10', shoes: '#E07818' });
 
 const daisy: Palette = { ...peach, Y: '#C86820', P: '#F8A838', Q: '#C86810', W: '#F8E858', R: '#3CB043', B: '#3CB043' };
 const rosalina: Palette = { ...peach, Y: '#F8ECB0', C: '#D8D8F0', P: '#8CE0F8', Q: '#3C8CC8', W: '#FFFFFF', R: '#E52521' };
@@ -44,7 +69,7 @@ const rosalina: Palette = { ...peach, Y: '#F8ECB0', C: '#D8D8F0', P: '#8CE0F8', 
 const toad: Palette = { W: '#FFFFFF', R: '#E52521', S: '#FCD8A8', K: '#000000', B: '#0058F8', Y: '#F8D800', D: '#8B4A1A' };
 const link: Palette = { G: '#3CB043', L: '#1E6B2A', Y: '#F8D048', S: '#FCD8A8', K: '#000000', D: '#8B5A2B', W: '#E8E0C8' };
 
-const blondie: Palette = { Y: '#F8D848', S: '#FCD8A8', K: '#000000', R: '#D0508C', P: '#FF7EB8', D: '#FFFFFF' };
+const blondie: Palette = { Y: '#F8D848', H: '#D8A020', S: '#FCD8A8', A: '#E8B080', K: '#000000', R: '#D0508C', P: '#FF7EB8', D: '#FFFFFF' };
 
 /** Recolours the dress for fire power / star cycle. */
 const dress = (base: Palette, P: string, Q: string, W = base.W): Palette => ({ ...base, P, Q, W });
@@ -52,13 +77,15 @@ const dress = (base: Palette, P: string, Q: string, W = base.W): Palette => ({ .
 /** Built-in roster. The first entry is the default character. */
 export const BUILTIN_CHARACTERS: CharacterDef[] = [
   {
-    id: 'mario', name: 'Mario', sprites: PLUMBER, palette: PALETTES.base, firePalette: PALETTES.fire,
-    starPalettes: [PALETTES.star1, PALETTES.star2, PALETTES.star3],
+    id: 'mario', name: 'Mario', sprites: PLUMBER, palette: mario,
+    // Fire Mario: white cap & overalls, red shirt.
+    firePalette: plumberStars[2],
+    starPalettes: plumberStars,
   },
   {
     id: 'luigi', name: 'Luigi', sprites: PLUMBER, palette: luigi,
-    firePalette: { ...luigi, R: '#F8F8F8', B: '#2FA84F' },
-    starPalettes: [PALETTES.star1, PALETTES.star2, { ...luigi, R: '#F8F8F8', B: '#2FA84F' }],
+    firePalette: { ...luigi, C: WHITE, T: WHITE, R: '#2FA84F' },
+    starPalettes: [plumberStars[0], plumberStars[1], { ...luigi, C: WHITE, T: WHITE, R: '#2FA84F' }],
   },
   {
     id: 'peach', name: 'Peach', sprites: PRINCESS, palette: peach,
@@ -98,13 +125,13 @@ export const BUILTIN_CHARACTERS: CharacterDef[] = [
   },
   {
     id: 'wario', name: 'Wario', sprites: PLUMBER, palette: wario,
-    firePalette: { ...wario, R: '#F8F8F8', B: '#E52521' },
-    starPalettes: [PALETTES.star1, PALETTES.star2, PALETTES.star3],
+    firePalette: { ...wario, C: WHITE, T: WHITE, R: '#E52521' },
+    starPalettes: plumberStars,
   },
   {
     id: 'waluigi', name: 'Waluigi', sprites: PLUMBER, palette: waluigi,
-    firePalette: { ...waluigi, R: '#F8F8F8', B: '#7B2D8E' },
-    starPalettes: [PALETTES.star1, PALETTES.star2, PALETTES.star3],
+    firePalette: { ...waluigi, C: WHITE, T: WHITE, R: '#7B2D8E' },
+    starPalettes: plumberStars,
   },
 ];
 

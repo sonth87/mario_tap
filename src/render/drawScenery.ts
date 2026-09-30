@@ -27,10 +27,119 @@ function triangle(ctx: CanvasRenderingContext2D, cx: number, baseY: number, h: n
   for (let i = 0; i < h; i += step) ctx.fillRect(cx - i - step, baseY - h + i, 2 * (i + step), step);
 }
 
-function cloud(ctx: CanvasRenderingContext2D, x: number, y: number, size: number): void {
-  ctx.fillRect(x + 6, y, 10 * size, 8);
-  ctx.fillRect(x, y + 5, 10 * size + 12, 8);
-  ctx.fillRect(x + 3, y + 11, 10 * size + 6, 4);
+/** Column heights of a shape: `top(x)` / `bottom(x)` in screen px for each column `x` of `[0, w)`. */
+type Column = (x: number) => number;
+
+/**
+ * Fills a column-described shape in `fill`, ringed by a 1 px `outline` taken from the shape dilated
+ * by one pixel (so steps between columns get joined) — the chunky edged look of the NES
+ * backgrounds. The ring never overlaps the fill, so translucent colours work too.
+ */
+function blob(ctx: CanvasRenderingContext2D, x0: number, w: number, top: Column, bottom: Column, fill: string, outline: string | null): void {
+  if (outline) {
+    ctx.fillStyle = outline;
+    for (let x = -1; x <= w; x++) {
+      const t = Math.min(top(x - 1), top(x), top(x + 1)) - 1;
+      const b = Math.max(bottom(x - 1), bottom(x), bottom(x + 1)) + 1;
+      if (!(b > t) || !Number.isFinite(t)) continue;
+      const inner = x >= 0 && x < w && bottom(x) > top(x);
+      if (!inner) {
+        ctx.fillRect(x0 + x, t, 1, b - t);
+        continue;
+      }
+      ctx.fillRect(x0 + x, t, 1, top(x) - t);
+      ctx.fillRect(x0 + x, bottom(x), 1, b - bottom(x));
+    }
+  }
+  ctx.fillStyle = fill;
+  for (let x = 0; x < w; x++) {
+    const t = top(x);
+    const b = bottom(x);
+    if (b > t) ctx.fillRect(x0 + x, t, 1, b - t);
+  }
+}
+
+/** A lobe row: `count` big bumps flanked by two smaller ones (the NES cloud / bush silhouette). */
+function lobes(count: number): number[] {
+  return [5, ...Array.from({ length: count }, () => 8), 5];
+}
+
+/** Placed lobes: centre x (from the shape's left edge) and radius. */
+function place(radii: number[]): Array<[cx: number, r: number]> {
+  const out: Array<[number, number]> = [];
+  let cx = radii[0];
+  radii.forEach((r, i) => {
+    if (i > 0) cx += Math.round((radii[i - 1] + r) * 0.7);
+    out.push([cx, r]);
+  });
+  return out;
+}
+
+const lobesWidth = (radii: number[]): number => {
+  const last = place(radii).at(-1);
+  return last ? last[0] + last[1] + 1 : 0;
+};
+
+/** Upper edge of overlapping round lobes whose centres sit on `cy`. */
+function lobeTop(radii: number[], cy: number): Column {
+  const placed = place(radii);
+  return (x) => {
+    let best = Infinity;
+    for (const [cx, r] of placed) {
+      const dx = x - cx;
+      if (Math.abs(dx) <= r) best = Math.min(best, Math.round(cy - Math.sqrt(r * r - dx * dx)));
+    }
+    return best;
+  };
+}
+
+/** Rounded-top hill with 45° flanks and a few dark spots, standing on the ground line. */
+function hill(ctx: CanvasRenderingContext2D, cx: number, h: number, fill: string, outline: string | null): void {
+  const r = Math.min(10, h);
+  const half = r + (h - r);
+  const top: Column = (x) => {
+    const dx = Math.abs(x - half);
+    if (dx > half) return Infinity;
+    if (dx <= r) return Math.round(GROUND_Y - h + r - Math.sqrt(r * r - dx * dx));
+    return GROUND_Y - h + r + (dx - r);
+  };
+  const x0 = cx - half;
+  blob(ctx, x0, half * 2 + 1, top, (x) => (Number.isFinite(top(x)) ? GROUND_Y + 1 : -Infinity), fill, outline);
+  if (!outline) return;
+  // Spots: small upright ovals, like the original's.
+  ctx.fillStyle = outline;
+  const spots: Array<[number, number]> = h > 24 ? [[-6, 8], [4, 12], [-12, 20], [0, 22], [10, 24]] : [[-3, 6], [3, 10]];
+  for (const [dx, dy] of spots) {
+    if (dy > h - 4) continue;
+    const sx = x0 + half + dx;
+    const sy = GROUND_Y - h + dy;
+    ctx.fillRect(sx, sy, 1, 3);
+    ctx.fillRect(sx + 1, sy - 1, 1, 5);
+    ctx.fillRect(sx + 2, sy, 1, 3);
+  }
+}
+
+/** Bush: 1–3 big lobes sitting on the ground. */
+function bush(ctx: CanvasRenderingContext2D, x: number, count: number, fill: string, outline: string | null): void {
+  const radii = lobes(count);
+  const top = lobeTop(radii, GROUND_Y - 2);
+  blob(ctx, x, lobesWidth(radii), top, (c) => (Number.isFinite(top(c)) ? GROUND_Y + 1 : -Infinity), fill, outline);
+}
+
+/** Cloud: bumpy top, rounded underside, outlined, with a pale shade along the bottom. */
+function cloud(ctx: CanvasRenderingContext2D, x: number, y: number, count: number, fill: string, shade: string | null, outline: string | null): void {
+  const radii = lobes(count);
+  const w = lobesWidth(radii);
+  const top = lobeTop(radii, y + 8);
+  const bottom: Column = (c) => {
+    if (!Number.isFinite(top(c))) return -Infinity;
+    const edge = Math.min(c, w - 1 - c);
+    return y + 14 - (edge < 4 ? 4 - edge : 0);
+  };
+  blob(ctx, x, w, top, bottom, fill, outline);
+  if (!shade) return;
+  ctx.fillStyle = shade;
+  for (let c = 3; c < w - 3; c++) ctx.fillRect(x + c, bottom(c) - 2, 1, 2);
 }
 
 function roundTree(ctx: CanvasRenderingContext2D, c: TreeColors, cx: number, h: number): void {
@@ -79,30 +188,25 @@ export function drawScenery(ctx: CanvasRenderingContext2D, s: GameState, theme: 
   sky(ctx, s, theme);
   if (!layers) return;
   const { mountains, clouds, hills, trees, bushes } = theme;
+  const outline = theme.sceneryOutline;
   if (mountains) {
     ctx.fillStyle = mountains;
     layer(ctx, s, 0.15, 11 * TILE, 0.7, 101, (c, x, k) => triangle(c, x, GROUND_Y, 56 + Math.round(hash(k) * 48), 4));
   }
   if (clouds) {
-    ctx.fillStyle = clouds;
-    layer(ctx, s, 0.3, 7 * TILE, 0.65, 203, (c, x, k) => cloud(c, x, 2 * TILE + hash(k) * 3 * TILE, 1 + Math.floor(hash(k + 5) * 3)));
+    layer(ctx, s, 0.3, 7 * TILE, 0.65, 203, (c, x, k) =>
+      cloud(c, x, Math.round(2 * TILE + hash(k) * 3 * TILE), 1 + Math.floor(hash(k + 5) * 3), clouds, theme.cloudShade, outline),
+    );
   }
   if (hills) {
-    ctx.fillStyle = hills;
-    layer(ctx, s, 0.5, 9 * TILE, 0.6, 307, (c, x, k) => triangle(c, x, GROUND_Y, 18 + Math.floor(hash(k) * 2) * 14, 2));
+    layer(ctx, s, 0.5, 9 * TILE, 0.7, 307, (c, x, k) => hill(c, x, hash(k) < 0.5 ? 20 : 36, hills, outline));
   }
   if (trees) {
-    layer(ctx, s, 0.7, 4 * TILE, 0.55, 409, (c, x, k) =>
+    layer(ctx, s, 0.7, 6 * TILE, 0.35, 409, (c, x, k) =>
       hash(k + 3) < 0.5 ? roundTree(c, trees, x, 18 + Math.round(hash(k) * 22)) : pineTree(c, trees, x, 26 + Math.round(hash(k) * 18)),
     );
   }
   if (bushes) {
-    ctx.fillStyle = bushes;
-    layer(ctx, s, 0.85, 5 * TILE, 0.5, 503, (c, x, k) => {
-      const w = 16 + Math.floor(hash(k) * 3) * 10;
-      c.fillRect(x, GROUND_Y - 6, w, 6);
-      c.fillRect(x + 3, GROUND_Y - 10, w - 6, 4);
-      c.fillRect(x + 7, GROUND_Y - 12, w - 14, 2);
-    });
+    layer(ctx, s, 0.85, 5 * TILE, 0.6, 503, (c, x, k) => bush(c, x, 1 + Math.floor(hash(k) * 3), bushes, outline));
   }
 }

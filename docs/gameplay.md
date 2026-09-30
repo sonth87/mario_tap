@@ -59,7 +59,7 @@ Vật phẩm trồi ra từ khối trong khoảng nửa giây, sau đó **chạy
 - Đang **lớn hoặc lửa** mà chạm quái (không phải đạp) thì **teo về nhỏ**, rồi nhấp nháy bất tử 2 giây.
 - Đang **nhỏ** mà chạm quái thì **chết**.
 - Rơi xuống hố thì chết ngay.
-- **Mỗi lượt chỉ có 1 mạng.** Khi chết: hoạt cảnh chết → màn **GAME OVER** (tỉ số, điểm cao nhất, "NEW RECORD!") → khoảng 0,6 giây không nhận input → nhấn để chơi lượt mới với màn chơi mới.
+- **Mỗi lượt chỉ có 1 mạng.** Khi chết: hoạt cảnh chết → màn **GAME OVER** (tỉ số, điểm cao nhất, "NEW RECORD!") → khoảng 0,6 giây không nhận input → nhấn để về màn tiêu đề (màn chơi mới, bảng tên game hiện ở giữa) → nhấn tiếp để chạy, bảng trượt lên khỏi màn hình.
 
 ## 6b. Cột cờ (mốc định kỳ)
 - Cột cờ đầu tiên xuất hiện ở khoảng **120m**, sau đó cứ **300m** có một cột (`FIRST_FLAG_TILES`, `FLAG_INTERVAL_TILES`).
