@@ -48,6 +48,8 @@ export interface PickerLayout {
 }
 
 const CARD_H_COMPACT = 30;
+/** Smallest compact card: 16 px sprite + name line. */
+const CARD_H_MIN = 26;
 
 /**
  * Centered panel. Cards wrap into evenly filled rows (11 cards → 6 + 5, never 10 + 1); when the
@@ -61,7 +63,9 @@ export function pickerLayout(viewWidth: number, count: number): PickerLayout {
   const perRow = Math.max(...sizes);
   const heightFor = (cardH: number): number => TITLE_H + rows * cardH + (rows - 1) * CARD_GAP + 2 * PANEL_PAD;
   const compact = heightFor(CARD_H) > VIEW_HEIGHT - 34;
-  const cardH = compact ? CARD_H_COMPACT : CARD_H;
+  // Many rows on a narrow view: compact cards shrink further (never below the sprite + name) to fit.
+  const fitH = Math.floor((VIEW_HEIGHT - 12 - TITLE_H - 2 * PANEL_PAD - (rows - 1) * CARD_GAP) / rows);
+  const cardH = compact ? Math.max(CARD_H_MIN, Math.min(CARD_H_COMPACT, fitH)) : CARD_H;
   const w = perRow * CARD_W + (perRow - 1) * CARD_GAP + 2 * PANEL_PAD;
   const h = heightFor(cardH);
   const panel = { x: Math.round((viewWidth - w) / 2), y: Math.round(Math.min(VIEW_HEIGHT - h - 6, Math.max(26, (VIEW_HEIGHT - h) / 2 - 6))), w, h };

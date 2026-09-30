@@ -7,7 +7,7 @@ Mini game kiểu Mario **một nút bấm**. Mario tự chạy, gặp vật cả
 - Package giao thẳng mã nguồn TypeScript (không có bước build). Dùng được với Vite, Next và mọi bundler hiểu TS.
 - HUD dựng sẵn trong canvas: credit, điểm, xu, kỷ lục, số mét, ảnh nhân vật, nút loa (docs/integration.md §7).
 - **Chạy độc lập**, không cần app chủ: `pnpm dev` mở trang demo (`demo/`); `pnpm build` ra site tĩnh trong `dist/`, mở ở đâu cũng chạy.
-- Tùy biến được: **theme** (màu trời, 5 lớp nền parallax gồm núi, mây, đồi, cây, bụi; màu khối/ống/cột cờ; 5 theme dựng sẵn), **nhân vật** (11 nhân vật dựng sẵn hoặc nhân vật tự định nghĩa), chữ hiển thị, âm thanh, cách lưu điểm.
+- Tùy biến được: **theme** (màu trời, 5 lớp nền parallax gồm núi, mây, đồi, cây, bụi; màu khối/ống/cột cờ; 5 theme dựng sẵn), **nhân vật** (17 nhân vật dựng sẵn hoặc nhân vật tự định nghĩa), chữ hiển thị, âm thanh, cách lưu điểm.
 
 ```tsx
 import { MarioGame } from '@sonth87/mario-runner/react';

@@ -3,7 +3,7 @@ import type { Palette } from '../core/types';
 import { BIG_JUMP, BIG_RUN, BIG_STAND } from './sprites/marioBig';
 import { SMALL_DEAD, SMALL_JUMP, SMALL_RUN, SMALL_STAND } from './sprites/marioSmall';
 import { BLONDIE } from './sprites/blondie';
-import { LINK, TOAD } from './sprites/heroes';
+import { BROOK, CHOPPER, FRANKY, JINBE, LUFFY, NAMI, ROBIN, SANJI, USOPP, ZORO } from './sprites/strawHats';
 import {
   PRINCESS_BIG_JUMP,
   PRINCESS_BIG_RUN,
@@ -60,14 +60,21 @@ const zelda: Palette = {
   ...peach, R: '#3C8CF0', Y: '#C8903C', P: '#F2EEFA', Q: '#8C78C8', W: '#F8D800', B: '#E52521', D: '#6B4226',
 };
 
-const wario = plumber({ cap: '#F8D800', shirt: '#F8D800', overalls: '#7B2D8E', hair: '#3B2A10', shoes: '#2F8A2F', buttons: WHITE });
-const waluigi = plumber({ cap: '#7B2D8E', shirt: '#7B2D8E', overalls: '#1B1B3A', hair: '#3B2A10', shoes: '#E07818' });
-
 const daisy: Palette = { ...peach, Y: '#C86820', P: '#F8A838', Q: '#C86810', W: '#F8E858', R: '#3CB043', B: '#3CB043' };
 const rosalina: Palette = { ...peach, Y: '#F8ECB0', C: '#D8D8F0', P: '#8CE0F8', Q: '#3C8CC8', W: '#FFFFFF', R: '#E52521' };
 
-const toad: Palette = { W: '#FFFFFF', R: '#E52521', S: '#FCD8A8', K: '#000000', B: '#0058F8', Y: '#F8D800', D: '#8B4A1A' };
-const link: Palette = { G: '#3CB043', L: '#1E6B2A', Y: '#F8D048', S: '#FCD8A8', K: '#000000', D: '#8B5A2B', W: '#E8E0C8' };
+const luffy: Palette = { Y: '#F8D060', R: '#D82800', K: '#101010', M: '#901010', T: '#F8F8F8', S: '#FCB068', B: '#2858B8', W: '#6890E0', Q: '#F8D800', D: '#A06830' };
+const zoro: Palette = {
+  G: '#48B048', E: '#F8D800', S: '#F0A868', K: '#101010', W: '#F8F8F8', H: '#207830', X: '#F8F8F8', Z: '#D82800', Q: '#382010', P: '#303038', D: '#101010',
+};
+const sanji: Palette = { Y: '#F8E070', S: '#FCC8A0', K: '#20202C', L: '#4A4A60', B: '#3C8CF0', W: '#F8F8F8', R: '#F85818', D: '#3A2412' };
+const robin: Palette = { H: '#23232F', L: '#4C4C6C', S: '#F4C090', A: '#DCA070', K: '#101010', R: '#C03050', V: '#6A3090', J: '#2A2A3A', D: '#6A3090' };
+const usopp: Palette = { K: '#101010', Y: '#F8D800', G: '#60C8F8', S: '#D89058', R: '#A04030', B: '#8A5A2A', D: '#4A2A10' };
+const chopper: Palette = { P: '#F878A8', W: '#F8F8F8', A: '#D8A868', F: '#8A4A20', L: '#E8B888', K: '#101010', N: '#3060D0', B: '#6858C8' };
+const franky: Palette = { B: '#40C8F8', K: '#101010', W: '#6878A0', S: '#F4B888', H: '#E83838', Y: '#F8D800', T: '#2848A0', D: '#8A5A2A' };
+const brook: Palette = { K: '#2A2A38', R: '#D82800', A: '#0C0C0C', W: '#F0F0E0', E: '#101010', D: '#101010' };
+const jinbe: Palette = { K: '#101010', U: '#5A8CD8', W: '#F8F8F8', O: '#E07828', P: '#2A2A40', D: '#8A5A2A' };
+const nami: Palette = { O: '#F87818', S: '#FCC8A0', A: '#E8A878', K: '#101010', R: '#E04060', W: '#F8F8F8', B: '#3C8CF0', J: '#2848A0', D: '#C84C0C' };
 
 const blondie: Palette = { Y: '#F8D848', H: '#D8A020', S: '#FCD8A8', A: '#E8B080', K: '#000000', R: '#D0508C', P: '#FF7EB8', D: '#FFFFFF' };
 
@@ -108,30 +115,59 @@ export const BUILTIN_CHARACTERS: CharacterDef[] = [
     starPalettes: [dress(rosalina, '#58D854', '#00A800'), dress(rosalina, '#F8D800', '#C84C0C'), dress(rosalina, '#F890C0', '#D0508C')],
   },
   {
-    id: 'toad', name: 'Toad', sprites: TOAD, palette: toad,
-    firePalette: { ...toad, B: '#E52521', R: '#0058F8' },
-    starPalettes: [{ ...toad, B: '#00A800', R: '#F8D800' }, { ...toad, B: '#F8D800', R: '#00A800' }, { ...toad, B: '#000000', R: '#C84C0C' }],
+    id: 'luffy', name: 'Luffy', sprites: LUFFY, palette: luffy,
+    firePalette: { ...luffy, R: WHITE, B: '#D82800', W: '#F87858' },
+    starPalettes: [{ ...luffy, R: '#00A800', B: '#F8D800' }, { ...luffy, R: '#F8D800', B: '#00A800' }, { ...luffy, R: '#000000', B: '#C84C0C' }],
   },
   {
-    id: 'link', name: 'Link', sprites: LINK, palette: link,
-    // Red Mail / Blue Mail colours from the original Zelda games.
-    firePalette: { ...link, G: '#E52521', L: '#8C1010' },
-    starPalettes: [{ ...link, G: '#3C8CF0', L: '#1B3C8C' }, { ...link, G: '#E52521', L: '#8C1010' }, { ...link, G: '#F8D800', L: '#C88C00' }],
+    id: 'zoro', name: 'Zoro', sprites: ZORO, palette: zoro,
+    firePalette: { ...zoro, W: '#D82800', H: '#F8F8F8' },
+    starPalettes: [{ ...zoro, W: '#58D854', H: '#F8D800' }, { ...zoro, W: '#F8D800', H: '#C84C0C' }, { ...zoro, W: '#68A8FC', H: '#0058F8' }],
+  },
+  {
+    id: 'sanji', name: 'Sanji', sprites: SANJI, palette: sanji,
+    firePalette: { ...sanji, K: '#F8F8F8', L: '#D82800', B: '#D82800' },
+    starPalettes: [{ ...sanji, K: '#00A800', L: '#58D854' }, { ...sanji, K: '#C84C0C', L: '#F8D800' }, { ...sanji, K: '#0058F8', L: '#68A8FC' }],
+  },
+  {
+    id: 'nami', name: 'Nami', sprites: NAMI, palette: nami,
+    firePalette: { ...nami, B: '#D82800', J: '#F8F8F8' },
+    starPalettes: [{ ...nami, B: '#00A800', J: '#58D854' }, { ...nami, B: '#F8D800', J: '#C84C0C' }, { ...nami, B: '#F890C0', J: '#D0508C' }],
+  },
+  {
+    id: 'robin', name: 'Robin', sprites: ROBIN, palette: robin,
+    firePalette: { ...robin, V: '#F8F8F8', J: '#D82800', D: '#D82800' },
+    starPalettes: [{ ...robin, V: '#00A800', J: '#58D854' }, { ...robin, V: '#F8D800', J: '#C84C0C' }, { ...robin, V: '#68A8FC', J: '#0058F8' }],
+  },
+  {
+    id: 'usopp', name: 'Usopp', sprites: USOPP, palette: usopp,
+    firePalette: { ...usopp, B: '#F8F8F8', Y: '#D82800' },
+    starPalettes: [{ ...usopp, B: '#00A800', Y: '#58D854' }, { ...usopp, B: '#F8D800', Y: '#C84C0C' }, { ...usopp, B: '#0058F8', Y: '#68A8FC' }],
+  },
+  {
+    id: 'chopper', name: 'Chopper', sprites: CHOPPER, palette: chopper,
+    firePalette: { ...chopper, P: '#F8F8F8', W: '#D82800', B: '#D82800' },
+    starPalettes: [{ ...chopper, P: '#58D854', B: '#00A800' }, { ...chopper, P: '#F8D800', B: '#C84C0C' }, { ...chopper, P: '#68A8FC', B: '#0058F8' }],
+  },
+  {
+    id: 'franky', name: 'Franky', sprites: FRANKY, palette: franky,
+    firePalette: { ...franky, H: '#F8F8F8', T: '#D82800' },
+    starPalettes: [{ ...franky, H: '#00A800', T: '#58D854' }, { ...franky, H: '#F8D800', T: '#C84C0C' }, { ...franky, H: '#0058F8', T: '#68A8FC' }],
+  },
+  {
+    id: 'brook', name: 'Brook', sprites: BROOK, palette: brook,
+    firePalette: { ...brook, K: '#F8F8F8', R: '#D82800' },
+    starPalettes: [{ ...brook, K: '#00A800', R: '#F8D800' }, { ...brook, K: '#C84C0C', R: '#F8D800' }, { ...brook, K: '#0058F8', R: '#F8F8F8' }],
+  },
+  {
+    id: 'jinbe', name: 'Jinbe', sprites: JINBE, palette: jinbe,
+    firePalette: { ...jinbe, O: '#F8F8F8', P: '#D82800' },
+    starPalettes: [{ ...jinbe, O: '#00A800', P: '#58D854' }, { ...jinbe, O: '#F8D800', P: '#C84C0C' }, { ...jinbe, O: '#F890C0', P: '#D0508C' }],
   },
   {
     id: 'blondie', name: 'Blondie', sprites: BLONDIE, palette: blondie,
     firePalette: { ...blondie, P: '#FFFFFF', R: '#E52521' },
     starPalettes: [{ ...blondie, P: '#58D854', R: '#00A800' }, { ...blondie, P: '#F8D800', R: '#C88C00' }, { ...blondie, P: '#68A8FC', R: '#0058F8' }],
-  },
-  {
-    id: 'wario', name: 'Wario', sprites: PLUMBER, palette: wario,
-    firePalette: { ...wario, C: WHITE, T: WHITE, R: '#E52521' },
-    starPalettes: plumberStars,
-  },
-  {
-    id: 'waluigi', name: 'Waluigi', sprites: PLUMBER, palette: waluigi,
-    firePalette: { ...waluigi, C: WHITE, T: WHITE, R: '#7B2D8E' },
-    starPalettes: plumberStars,
   },
 ];
 

@@ -75,7 +75,7 @@ export interface MarioGameOptions {
   theme?: ThemeInput;
   /** Shortcut for `theme.sky` (colour, or `null` = transparent). Wins over the theme when set. */
   background?: string | null;
-  /** Playable roster (default: Mario, Luigi, Peach, Zelda). The first is the default pick. */
+  /** Playable roster (default: `BUILTIN_CHARACTERS`, Mario first). The first is the default pick. */
   characters?: CharacterDef[];
   /** Initial character id (a stored choice wins when `storage` remembers one). */
   character?: string;

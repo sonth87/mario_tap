@@ -23,7 +23,7 @@ test('credit sits top-left, clear of the top-right buttons', () => {
 
 test('character picker stays on screen and never leaves a lone card', () => {
   for (const w of [192, 246, 346, 460, 640]) {
-    for (const count of [4, 7, 11, 14]) {
+    for (const count of [4, 7, 11, 14, 17]) {
       const { panel, cards } = pickerLayout(w, count);
       assert.ok(panel.x >= 0 && panel.x + panel.w <= w, `w${w} n${count}: panel x`);
       assert.ok(panel.y >= 0 && panel.y + panel.h <= 208, `w${w} n${count}: panel y (${panel.y + panel.h})`);

@@ -84,7 +84,7 @@ Vật phẩm trồi ra từ khối trong khoảng nửa giây, sau đó **chạy
 Có 4 tier (0 → 3), cứ mỗi 250m mở thêm một tier. Tier vừa mở có trọng số chọn cao gấp đôi, nên đi xa thì các chunk khó xuất hiện nhiều hơn. Dù vậy mọi chunk vẫn nằm trong giới hạn nhảy của [level-design.md](level-design.md).
 
 ## 9. Nhân vật
-- Có sẵn 11 nhân vật: **Mario, Luigi, Peach, Zelda, Daisy, Rosalina, Toad, Link, Blondie, Wario, Waluigi**. Mario, Luigi, Wario, Waluigi dùng chung dáng; Peach, Zelda, Daisy, Rosalina dùng chung dáng công chúa; Toad, Link và Blondie có dáng riêng. Khác nhau ở sprite và bảng màu.
+- Có sẵn 17 nhân vật: **Mario, Luigi, Peach, Zelda, Daisy, Rosalina, Luffy, Zoro, Sanji, Nami, Robin, Usopp, Chopper, Franky, Brook, Jinbe, Blondie**. Mario và Luigi dùng chung dáng; Peach, Zelda, Daisy, Rosalina dùng chung dáng công chúa; 9 thành viên băng Mũ Rơm (Chopper khi lớn biến thành dạng Heavy Point) và Blondie có dáng riêng. Khác nhau ở sprite và bảng màu.
 - Bảng chọn tự chia hàng đều (11 nhân vật → 6 + 5) và chuyển sang thẻ nhỏ khi màn hình thấp (điện thoại).
 - Mỗi nhân vật có đủ bản nhỏ, lớn, lửa và bộ màu nhấp nháy khi ăn sao. Luật chơi và kích thước va chạm như nhau cho mọi nhân vật.
 - **Ảnh nhân vật ở góc trên bên phải**: bấm vào đó để mở bảng chọn. Chỉ bấm được **trước khi bắt đầu** hoặc ở **màn GAME OVER**. Khi đang chơi, ảnh bị làm mờ và bấm vào đó chỉ có tác dụng như một lần nhảy bình thường.

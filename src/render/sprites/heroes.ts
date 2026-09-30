@@ -1,10 +1,9 @@
 import type { CharacterSprites } from '../../core/character';
 
 /**
- * Link and Toad, facing right. Legs come from shared templates ('p' = trousers, 'd' = boots) so the
- * three run frames stay consistent; `legs()` swaps in each hero's palette keys.
- * Link keys: G tunic / cap · L tunic shade · Y hair · S skin · K eye · D boots & belt · W leggings.
- * Toad keys: W cap & trousers · R cap spots · S skin · K eye · B vest · Y vest trim · D shoes.
+ * Shared leg templates and frame assembly for the non-plumber heroes (all facing right). Legs come
+ * from templates ('p' = trousers, 'd' = boots) so the three run frames stay consistent; `legs()`
+ * swaps in each hero's palette keys.
  */
 
 export const SMALL_LEGS = {
@@ -25,8 +24,10 @@ export const BIG_LEGS = {
 
 export type LegSet = Record<'stand' | 'run0' | 'run1' | 'run2' | 'jump', string[]>;
 
-export function legs(set: LegSet, pants: string, boots: string): LegSet {
-  const paint = (rows: string[]): string[] => rows.map((r) => r.replace(/p/g, pants).replace(/d/g, boots));
+/** `sole` (optional) repaints the bottom row's boots — bare legs in sandals: `legs(set, 'S', 'S', 'D')`. */
+export function legs(set: LegSet, pants: string, boots: string, sole?: string): LegSet {
+  const paint = (rows: string[]): string[] =>
+    rows.map((r, i) => r.replace(/p/g, pants).replace(/d/g, sole && i === rows.length - 1 ? sole : boots));
   return { stand: paint(set.stand), run0: paint(set.run0), run1: paint(set.run1), run2: paint(set.run2), jump: paint(set.jump) };
 }
 
@@ -40,123 +41,3 @@ export function hero(smallTop: string[], smallTopReach: string[], small: LegSet,
     bigJump: [...bigTopReach, ...big.jump],
   };
 }
-
-// ── Link ─────────────────────────────────────────────────────────────────────
-const LINK_HEAD = [
-  '.......GGGG.....',
-  '.....GGGGGGG....',
-  '...GGGGGGGGGG...',
-  '..GGGYYYYYYGG...',
-  '.GG.YYSSSKSY....',
-  '.G..YSSSSSSSS...',
-  '....YYSSSSSS....',
-  '......SSSS......',
-];
-const LINK_BODY = ['....GGGGGGG.....', '...GGGGLGGGGSS..', '..SSGGGLGGG.SS..', '..SS.DDDDDD.....', '....GGGGGGG.....'];
-const LINK_BODY_REACH = ['....GGGGGGG.SS..', '...GGGGLGGGGSS..', '..SSGGGLGGGG....', '..SS.DDDDDD.....', '....GGGGGGG.....'];
-
-const LINK_BIG_HEAD = [
-  '........GGGG....',
-  '......GGGGGGG...',
-  '....GGGGGGGGGG..',
-  '...GGGGGGGGGGG..',
-  '..GGGYYYYYYYGG..',
-  '.GGGYYSSSSKSY...',
-  '.GG.YSSSSSKSSS..',
-  '.G..YSSSSSSSSS..',
-  '....YYSSSSSSS...',
-  '.....YSSSSSS....',
-  '.......SSSS.....',
-];
-const LINK_BIG_TORSO = [
-  '.....GGGGGGG....',
-  '....GGGGLGGGG...',
-  '...GGGGGLGGGGSS.',
-  '..SSGGGGLGGGGSS.',
-  '..SSGGGGLGGGG...',
-  '..SS.DDDDDDDD...',
-  '.....DDDYDDDD...',
-  '.....GGGGGGGG...',
-  '....GGGGGGGGGG..',
-  '....GGGGGGGGGG..',
-  '....GGGGGGGGGG..',
-  '...GGGGGGGGGGG..',
-  '...GGGLGGGGLGG..',
-  '...GGLLGGGGLLG..',
-  '....WWW...WWW...',
-];
-const LINK_BIG_TORSO_REACH = [
-  '.....GGGGGGG.SS.',
-  '....GGGGLGGGGSS.',
-  '...GGGGGLGGGGS..',
-  '..SSGGGGLGGGG...',
-  '..SSGGGGLGGGG...',
-  ...LINK_BIG_TORSO.slice(5),
-];
-
-export const LINK: CharacterSprites = hero(
-  [...LINK_HEAD, ...LINK_BODY],
-  [...LINK_HEAD, ...LINK_BODY_REACH],
-  legs(SMALL_LEGS, 'W', 'D'),
-  [...LINK_BIG_HEAD, ...LINK_BIG_TORSO],
-  [...LINK_BIG_HEAD, ...LINK_BIG_TORSO_REACH],
-  legs(BIG_LEGS, 'W', 'D'),
-);
-
-// ── Toad ─────────────────────────────────────────────────────────────────────
-const TOAD_HEAD = [
-  '.....WWWWWW.....',
-  '...WWRRWWRRWW...',
-  '..WWRRRWWRRRWW..',
-  '.WWWRRWWWWRRWWW.',
-  '.WRRWWWWWWWWRRW.',
-  '.WRRWWWWWWWWRRW.',
-  '..WWWWWWWWWWWW..',
-  '....SSSKSKSS....',
-  '....SSSSSSSS....',
-];
-const TOAD_BODY = ['...BBYSSSSYBB...', '..SBBBYYYYBBBS..', '..SSBBBBBBBBSS..', '....WWWWWWWW....'];
-const TOAD_BODY_REACH = ['...BBYSSSSYBBSS.', '..SBBBYYYYBBBS..', '...BBBBBBBBB....', '....WWWWWWWW....'];
-
-const TOAD_BIG_HEAD = [
-  '.....WWWWWW.....',
-  '...WWWWWWWWWW...',
-  '..WWRRRWWRRRWW..',
-  '.WWRRRRWWRRRRWW.',
-  '.WWRRRWWWWRRRWW.',
-  'WWWWWWWWWWWWWWWW',
-  'WRRWWWWWWWWWWRRW',
-  'WRRRWWWWWWWWRRRW',
-  'WWRRWWWWWWWWRRWW',
-  '.WWWWWWWWWWWWWW.',
-  '...SSSSSSSSSS...',
-  '...SSSKSSKSSS...',
-  '...SSSKSSKSSS...',
-  '...SSSSSSSSSS...',
-  '....SSSSSSSS....',
-];
-const TOAD_BIG_BODY = [
-  '....BBYYYYBB....',
-  '...BBBBYYBBBB...',
-  '..SBBBBYYBBBBS..',
-  '..SBBBBBBBBBBS..',
-  '..SSBBBBBBBBSS..',
-  '..SS.BBBBBB.SS..',
-  '.....WWWWWW.....',
-  '....WWWWWWWW....',
-  '....WWWWWWWW....',
-  '....WWWWWWWW....',
-  '....WWW..WWW....',
-];
-const TOAD_BIG_BODY_REACH = [
-  '....BBYYYYBB.SS.', '...BBBBYYBBBBSS.', '..SBBBBYYBBBBS..', '..SBBBBBBBBBB...', '..SSBBBBBBBB....', ...TOAD_BIG_BODY.slice(5),
-];
-
-export const TOAD: CharacterSprites = hero(
-  [...TOAD_HEAD, ...TOAD_BODY],
-  [...TOAD_HEAD, ...TOAD_BODY_REACH],
-  legs(SMALL_LEGS, 'W', 'D'),
-  [...TOAD_BIG_HEAD, ...TOAD_BIG_BODY],
-  [...TOAD_BIG_HEAD, ...TOAD_BIG_BODY_REACH],
-  legs(BIG_LEGS, 'W', 'D'),
-);

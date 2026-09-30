@@ -96,7 +96,7 @@ theme: { sky: ['#0b1020', '#3b2d6b'], trees: null, blocks: { O: '#1070A0' } }
 Preset `glass` có trời trong suốt và các lớp nền bán trong suốt, hợp với khung kính hoặc nền mờ phía sau. Danh sách preset xuất ra ở `THEMES`, hàm gộp là `resolveTheme()`.
 
 ### 4c. Nhân vật
-- Mặc định có 11 nhân vật (`BUILTIN_CHARACTERS`): Mario, Luigi, Peach, Zelda, Daisy, Rosalina, Toad, Link, Blondie, Wario, Waluigi. Muốn bỏ bớt, truyền `characters={BUILTIN_CHARACTERS.filter(...)}`. Nhân vật chỉ đổi được **trước khi bắt đầu hoặc ở màn GAME OVER**:
+- Mặc định có 17 nhân vật (`BUILTIN_CHARACTERS`): Mario, Luigi, Peach, Zelda, Daisy, Rosalina, Luffy, Zoro, Sanji, Nami, Robin, Usopp, Chopper, Franky, Brook, Jinbe, Blondie. Muốn bỏ bớt, truyền `characters={BUILTIN_CHARACTERS.filter(...)}`. Nhân vật chỉ đổi được **trước khi bắt đầu hoặc ở màn GAME OVER**:
   - trong canvas: bấm ảnh nhân vật ở góc trên phải (`characterButton`);
   - từ code: `game.openCharacterPicker()` hoặc `game.setCharacter('luigi')`;
   - `stats.canChangeCharacter` cho biết lúc này có đổi được không.
