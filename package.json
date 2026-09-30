@@ -1,0 +1,37 @@
+{
+  "name": "@sonth87/mario-tap",
+  "version": "0.1.0",
+  "private": true,
+  "description": "One-button auto-running infinite Mario-style mini game (Canvas 2D, zero runtime deps, optional React wrapper)",
+  "author": "Sonth87 <sonth87@gmail.com> (https://github.com/sonth87)",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./react": "./src/react/index.ts"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "tsx tests/index.ts",
+    "validate": "tsx scripts/validate-chunks.ts"
+  },
+  "peerDependencies": {
+    "react": ">=18"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.3",
+    "@types/react": "^19.2.18",
+    "react": "^19.3.0",
+    "tsx": "^4.23.13",
+    "typescript": "~5.9.3",
+    "vite": "^8.3.0"
+  }
+}
