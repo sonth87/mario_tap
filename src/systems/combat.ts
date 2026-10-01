@@ -1,6 +1,8 @@
-import { KICK_GRACE_FRAMES, SHELL_SPEED, SQUASH_FRAMES, STOMP_BOUNCE } from '../core/constants';
+import { COMBO_MAX_MULTIPLIER, ENEMY_POINTS, HITSTOP_FRAMES, KICK_GRACE_FRAMES, SHELL_SPEED, SQUASH_FRAMES, STOMP_BOUNCE } from '../core/constants';
 import type { Entity } from '../core/types';
-import { isEnemy, isItem, isLive, toShell } from '../entities/factory';
+import { isEnemy, isItem, isLive, isSpiky, toShell } from '../entities/factory';
+import { firebarHits } from './hazards';
+import { sameLayer } from './lift';
 import type { GameState } from '../game/state';
 import { overlaps } from '../physics/body';
 import { collectItem, hurtMario } from './marioPower';
@@ -22,7 +24,14 @@ function kick(s: GameState, shell: Entity): void {
   shell.mode = 'slide';
   shell.vx = dir * SHELL_SPEED;
   shell.timer = KICK_GRACE_FRAMES;
+  s.hitstop = HITSTOP_FRAMES;
   s.events.push('kick');
+}
+
+/** Points for the next stomp of a chain: 10, 20, 40, 80, 80 … (Mario's `combo` resets on landing). */
+function chainPoints(s: GameState): number {
+  s.mario.combo += 1;
+  return ENEMY_POINTS * Math.min(COMBO_MAX_MULTIPLIER, 2 ** (s.mario.combo - 1));
 }
 
 function touchShell(s: GameState, shell: Entity, stomp: boolean): void {
@@ -56,14 +65,15 @@ function touchEnemy(s: GameState, e: Entity): void {
     touchShell(s, e, stomp);
     return;
   }
-  if (!stomp) {
+  if (!stomp || isSpiky(e)) {
     hurtMario(s);
     return;
   }
   bounce(s);
-  addKill(s, e);
+  addKill(s, e, chainPoints(s));
+  s.hitstop = HITSTOP_FRAMES;
   s.events.push('stomp');
-  if (e.kind === 'bullet') {
+  if (e.kind === 'bullet' || e.kind === 'bird') {
     e.mode = 'flipped';
     e.vx *= 0.5;
     e.vy = 0;
@@ -83,14 +93,20 @@ function touchEnemy(s: GameState, e: Entity): void {
 export function marioVsEntities(s: GameState): void {
   for (const e of s.entities) {
     if (s.status !== 'playing') return;
-    if (!isLive(e) || e.kind === 'fireball' || !overlaps(s.mario, e)) continue;
+    if (e.kind === 'firebar') {
+      if (e.active && firebarHits(e, s.mario)) hurtMario(s);
+      continue;
+    }
+    if (!isLive(e) || e.kind === 'fireball' || !overlaps(s.mario, e) || !sameLayer(s, e.x + e.w / 2)) continue;
     if (isItem(e)) collectItem(s, e);
     else touchEnemy(s, e);
   }
 }
 
+const isWalker = (e: Entity): boolean => e.kind === 'goomba' || e.kind === 'koopa' || e.kind === 'spiny' || e.kind === 'spikecloud';
+
 function walkers(a: Entity, b: Entity): boolean {
-  return (a.kind === 'goomba' || a.kind === 'koopa') && (b.kind === 'goomba' || b.kind === 'koopa');
+  return isWalker(a) && isWalker(b);
 }
 
 /** Pairwise: fireballs and sliding shells knock enemies out; walking enemies bounce off each other. */

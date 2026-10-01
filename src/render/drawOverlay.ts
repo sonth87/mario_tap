@@ -1,3 +1,4 @@
+import type { BiomeId } from '../core/biome';
 import { GAME_OVER_LOCK_FRAMES, VIEW_HEIGHT } from '../core/constants';
 import type { GameLabels } from '../core/options';
 import type { GameTheme } from '../core/theme';
@@ -6,34 +7,17 @@ import type { GameState } from '../game/state';
 import { drawSprite } from './atlas';
 import { drawPixelText, GLYPH_H, pixelTextWidth } from './pixelFont';
 import { COIN } from './sprites/items';
+import { drawText, type TextStyle } from './text';
 import { HUD_MARGIN_TOP, HUD_MARGIN_X, hudTextRight } from './uiLayout';
-
-const FONT = 'ui-monospace, Menlo, Consolas, monospace';
-
-function text(ctx: CanvasRenderingContext2D, theme: GameTheme, value: string, x: number, y: number, size: number, color = theme.text): void {
-  ctx.font = `bold ${size}px ${FONT}`;
-  ctx.lineJoin = 'round';
-  ctx.lineWidth = 2.5;
-  ctx.strokeStyle = theme.textOutline;
-  ctx.strokeText(value, x, y);
-  ctx.fillStyle = color;
-  ctx.fillText(value, x, y);
-}
 
 const pad = (n: number, len = 6): string => String(n).padStart(len, '0');
 
-function spaced(ctx: CanvasRenderingContext2D, value: string, x: number, y: number, tracking: number): void {
-  let cx = x;
-  for (const ch of value) {
-    ctx.fillText(ch, cx, y);
-    cx += ctx.measureText(ch).width + tracking;
-  }
-}
+const big = (theme: GameTheme, color = theme.text, extra: Partial<TextStyle> = {}): TextStyle => ({ font: 'big', color, outline: theme.textOutline, ...extra });
+const mini = (theme: GameTheme, color: string, extra: Partial<TextStyle> = {}): TextStyle => ({ font: 'mini', color, outline: theme.textOutline, ...extra });
 
 /**
- * Top-bar HUD (all sizes are world px): score under the credit on the
- * left; coin counter with a small title in the centre; BEST label + value over the distance on the
- * right, left of the portrait / speaker buttons. No "SCORE" caption — the credit line fills that role.
+ * Top-bar HUD (world px, pixel font): score under the credit on the left; coin counter with a small
+ * title in the centre; BEST label + value over the distance on the right, left of the buttons.
  */
 export function drawHud(
   ctx: CanvasRenderingContext2D,
@@ -45,42 +29,22 @@ export function drawHud(
   creditShown: boolean,
 ): void {
   const h = theme.hud;
-  ctx.textBaseline = 'top';
-  ctx.textAlign = 'left';
-  ctx.font = `bold 6.3px ${FONT}`;
-  ctx.fillStyle = h.score;
-  ctx.fillText(pad(stats.score), HUD_MARGIN_X, HUD_MARGIN_TOP + (creditShown ? 11 : 1));
+  drawText(ctx, pad(stats.score), HUD_MARGIN_X, HUD_MARGIN_TOP + (creditShown ? 11 : 1), big(theme, h.score));
 
-  const cx = s.viewWidth / 2;
+  const cx = Math.round(s.viewWidth / 2);
   ctx.save();
-  ctx.translate(cx - 15, HUD_MARGIN_TOP + 0.5);
-  ctx.scale(0.42, 0.42);
+  ctx.translate(cx - 16, HUD_MARGIN_TOP + 0.5);
+  ctx.scale(0.5, 0.5);
   drawSprite(ctx, COIN, 0, 0);
   ctx.restore();
-  ctx.font = `bold 7.6px ${FONT}`;
-  ctx.fillStyle = h.coin;
-  ctx.fillText(`×${pad(stats.coins, 2)}`, cx - 7, HUD_MARGIN_TOP - 0.5);
-  if (labels.title && s.viewWidth >= 260) {
-    ctx.font = `bold 4.6px ${FONT}`;
-    ctx.fillStyle = h.subtitle;
-    ctx.textAlign = 'center';
-    spaced(ctx, labels.title.toUpperCase(), cx - (labels.title.length * 3.5) / 2, HUD_MARGIN_TOP + 9.5, 0.45);
-    ctx.textAlign = 'left';
-  }
+  drawText(ctx, `×${pad(stats.coins, 2)}`, cx - 6, HUD_MARGIN_TOP + 1, big(theme, h.coin));
+  if (labels.title && s.viewWidth >= 260) drawText(ctx, labels.title, cx, HUD_MARGIN_TOP + 11, big(theme, h.subtitle, { align: 'center' }));
 
   const right = hudTextRight(s.viewWidth, buttons.portrait, buttons.sound);
-  ctx.textAlign = 'right';
   const value = pad(Math.max(stats.best.score, stats.score));
-  ctx.font = `bold 6.3px ${FONT}`;
-  const valueWidth = ctx.measureText(value).width;
-  ctx.fillStyle = h.best;
-  ctx.fillText(value, right, HUD_MARGIN_TOP + 1);
-  ctx.font = `4.8px ${FONT}`;
-  ctx.fillStyle = h.bestLabel;
-  ctx.fillText(labels.best, right - valueWidth - 2.5, HUD_MARGIN_TOP + 2.4);
-  ctx.font = `bold 6.3px ${FONT}`;
-  ctx.fillStyle = h.distance;
-  ctx.fillText(`${stats.distance}${labels.metres}`, right, HUD_MARGIN_TOP + 9.5);
+  const w = drawText(ctx, value, right, HUD_MARGIN_TOP + 1, big(theme, h.best, { align: 'right' }));
+  drawText(ctx, labels.best, right - w - 4, HUD_MARGIN_TOP + 1, big(theme, h.bestLabel, { align: 'right' }));
+  drawText(ctx, `${stats.distance}${labels.metres}`, right, HUD_MARGIN_TOP + 11, big(theme, h.distance, { align: 'right' }));
 }
 
 function panel(ctx: CanvasRenderingContext2D, theme: GameTheme, cx: number, cy: number, w: number, h: number): void {
@@ -141,11 +105,45 @@ function drawBoard(ctx: CanvasRenderingContext2D, b: BoardBox, logo: string): vo
   drawPixelText(ctx, logo, tx, ty, cell, ch);
 }
 
-/** Start prompt with the title board, board sliding away as a run starts, game-over card. */
-export function drawPrompts(ctx: CanvasRenderingContext2D, s: GameState, stats: GameStats, labels: GameLabels, theme: GameTheme): void {
+const BIOME_LABEL: Record<BiomeId, keyof GameLabels> = { grass: 'biomeGrass', desert: 'biomeDesert', snow: 'biomeSnow', castle: 'biomeCastle', sky: 'biomeSky' };
+/** How long (frames) the biome / speed banner stays up. */
+const BANNER_FRAMES = 150;
+
+/** "DESERT" / "SPEED UP!" banner after a flagpole, sliding in and fading out. */
+function drawBanner(ctx: CanvasRenderingContext2D, s: GameState, labels: GameLabels, theme: GameTheme): void {
+  const biomeAge = s.frame - s.biomeFrame;
+  const speedAge = s.frame - s.speedFrame;
+  const showBiome = s.biomeFrame > 0 && biomeAge < BANNER_FRAMES;
+  const showSpeed = s.speedFrame > 0 && speedAge < BANNER_FRAMES;
+  if (!showBiome && !showSpeed) return;
+  const age = Math.min(showBiome ? biomeAge : Infinity, showSpeed ? speedAge : Infinity);
   const cx = s.viewWidth / 2;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
+  ctx.save();
+  ctx.globalAlpha = age > BANNER_FRAMES - 30 ? (BANNER_FRAMES - age) / 30 : 1;
+  const y = 40 - Math.max(0, 12 - age) * 2;
+  if (showBiome) drawText(ctx, labels[BIOME_LABEL[s.biome]], cx, y, big(theme, theme.textAccent, { cell: 2, align: 'center' }));
+  if (showSpeed && Math.floor(speedAge / 8) % 2 === 0) {
+    drawText(ctx, `${labels.speedUp} ${'+'.repeat(s.speedLevel)}`, cx, y + (showBiome ? 20 : 4), big(theme, '#FF7A59', { align: 'center' }));
+  }
+  ctx.restore();
+}
+
+function fill(template: string, values: Record<string, number>): string {
+  return template.replace(/\{(\w+)\}/g, (m, k: string) => (k in values ? String(values[k]) : m));
+}
+
+/** Start prompt with the title board, board sliding away as a run starts, banners, game-over card, pause card. */
+export function drawPrompts(ctx: CanvasRenderingContext2D, s: GameState, stats: GameStats, labels: GameLabels, theme: GameTheme, paused: boolean): void {
+  const cx = s.viewWidth / 2;
+  const blink = Math.floor(s.frame / 30) % 2 === 0;
+  if (paused) {
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.fillRect(0, 0, s.viewWidth, VIEW_HEIGHT);
+    drawText(ctx, labels.paused, cx, VIEW_HEIGHT * 0.36, big(theme, theme.textAccent, { cell: 2, align: 'center', baseline: 'middle' }));
+    drawText(ctx, labels.resume, cx, VIEW_HEIGHT * 0.36 + 18, big(theme, theme.text, { align: 'center', baseline: 'middle' }));
+    return;
+  }
+  if (s.status === 'playing') drawBanner(ctx, s, labels, theme);
   if (labels.logo && (s.status === 'idle' || (s.status === 'playing' && s.statusTimer < BOARD_SLIDE_FRAMES))) {
     const b = boardBox(s.viewWidth, labels.logo);
     if (s.status === 'playing') {
@@ -156,24 +154,27 @@ export function drawPrompts(ctx: CanvasRenderingContext2D, s: GameState, stats: 
     drawBoard(ctx, b, labels.logo);
     if (s.status === 'playing') return;
     const below = b.y + b.h + 14;
-    if (Math.floor(s.frame / 30) % 2 === 0) text(ctx, theme, labels.start, cx, below, 8);
-    if (stats.best.score > 0) text(ctx, theme, `${labels.best} ${stats.best.score}`, cx, below + 13, 7, theme.textAccent);
+    if (blink) drawText(ctx, labels.start, cx, below, big(theme, theme.text, { align: 'center', baseline: 'middle' }));
+    if (stats.best.score > 0) drawText(ctx, `${labels.best} ${stats.best.score}`, cx, below + 13, big(theme, theme.textAccent, { align: 'center', baseline: 'middle' }));
     return;
   }
   if (s.status === 'idle') {
-    const blink = Math.floor(s.frame / 30) % 2 === 0;
     const cy = VIEW_HEIGHT * 0.34;
     const hasBest = stats.best.score > 0;
-    panel(ctx, theme, cx, cy, Math.min(s.viewWidth - 16, 180), hasBest ? 34 : 22);
-    if (blink) text(ctx, theme, labels.start, cx, cy - (hasBest ? 6 : 0), 8);
-    if (hasBest) text(ctx, theme, `${labels.best} ${stats.best.score}`, cx, cy + 8, 7, theme.textAccent);
+    panel(ctx, theme, cx, cy, Math.min(s.viewWidth - 16, 190), hasBest ? 34 : 22);
+    if (blink) drawText(ctx, labels.start, cx, cy - (hasBest ? 6 : 0), big(theme, theme.text, { align: 'center', baseline: 'middle' }));
+    if (hasBest) drawText(ctx, `${labels.best} ${stats.best.score}`, cx, cy + 8, big(theme, theme.textAccent, { align: 'center', baseline: 'middle' }));
     return;
   }
   if (s.status !== 'over') return;
-  const cy = VIEW_HEIGHT * 0.36;
-  panel(ctx, theme, cx, cy, Math.min(s.viewWidth - 16, 190), 60);
-  text(ctx, theme, labels.gameOver, cx, cy - 19, 11, '#E52521');
-  text(ctx, theme, `${labels.score} ${stats.score}  ·  ${labels.best} ${stats.best.score}`, cx, cy - 4, 7);
-  if (stats.newRecord) text(ctx, theme, labels.newRecord, cx, cy + 8, 8, theme.textAccent);
-  if (s.statusTimer > GAME_OVER_LOCK_FRAMES && Math.floor(s.frame / 30) % 2 === 0) text(ctx, theme, labels.restart, cx, cy + 20, 7);
+  ctx.fillStyle = `rgba(0,0,0,${Math.min(0.3, s.statusTimer / 60)})`;
+  ctx.fillRect(0, 0, s.viewWidth, VIEW_HEIGHT);
+  const cy = VIEW_HEIGHT * 0.38;
+  panel(ctx, theme, cx, cy, Math.min(s.viewWidth - 16, 210), 76);
+  drawText(ctx, labels.gameOver, cx, cy - 25, big(theme, '#E52521', { cell: 2, align: 'center', baseline: 'middle' }));
+  drawText(ctx, `${labels.score} ${stats.score}  ${labels.best} ${stats.best.score}`, cx, cy - 7, big(theme, theme.text, { align: 'center', baseline: 'middle' }));
+  const line = fill(labels.runStats, { distance: stats.distance, coins: stats.coins, kills: stats.kills, flags: stats.flags });
+  drawText(ctx, line, cx, cy + 4, mini(theme, 'rgba(255,255,255,0.8)', { align: 'center', baseline: 'middle' }));
+  if (stats.newRecord) drawText(ctx, labels.newRecord, cx, cy + 15, big(theme, theme.textAccent, { align: 'center', baseline: 'middle' }));
+  if (s.statusTimer > GAME_OVER_LOCK_FRAMES && blink) drawText(ctx, labels.restart, cx, cy + 27, big(theme, theme.text, { align: 'center', baseline: 'middle' }));
 }

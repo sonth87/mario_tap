@@ -1,3 +1,5 @@
+import type { MusicInput } from '../audio/music';
+import type { BiomeId } from './biome';
 import type { CharacterDef } from './character';
 import type { ThemeInput } from './theme';
 import type { BestRecord, GameEvent, GameStats } from './types';
@@ -20,6 +22,19 @@ export interface GameLabels {
   logo: string;
   mute: string;
   unmute: string;
+  /** Banner shown when a biome starts (after each flagpole). */
+  biomeGrass: string;
+  biomeDesert: string;
+  biomeSnow: string;
+  biomeCastle: string;
+  biomeSky: string;
+  /** Banner line when the run speed goes up. */
+  speedUp: string;
+  /** Pause card. */
+  paused: string;
+  resume: string;
+  /** Game-over summary line; placeholders {distance} {coins} {kills} {flags}. */
+  runStats: string;
 }
 
 export const DEFAULT_LABELS: GameLabels = {
@@ -35,6 +50,15 @@ export const DEFAULT_LABELS: GameLabels = {
   logo: 'SKYLINE',
   mute: 'Mute sound',
   unmute: 'Unmute sound',
+  biomeGrass: 'GRASSLAND',
+  biomeDesert: 'DESERT',
+  biomeSnow: 'SNOWFIELD',
+  biomeCastle: 'CASTLE',
+  biomeSky: 'CLOUDLAND',
+  speedUp: 'SPEED UP!',
+  paused: 'PAUSED',
+  resume: 'CLICK / SPACE TO RESUME',
+  runStats: '{distance}M · {coins} COINS · {kills} KO · {flags} FLAGS',
 };
 
 /** Author credit drawn bottom-left; clickable (opens `url` in a new tab) only between runs. */
@@ -73,8 +97,26 @@ export interface MarioGameOptions {
    * of one, e.g. `{ base: 'night', sky: ['#000', '#123'], trees: null }`. See core/theme.ts.
    */
   theme?: ThemeInput;
-  /** Shortcut for `theme.sky` (colour, or `null` = transparent). Wins over the theme when set. */
+  /** Shortcut for `theme.sky` (colour, or `null` = transparent). Wins over the theme when set — in every biome. */
   background?: string | null;
+  /**
+   * Biome cycle, one per flagpole (default: grass → desert → snow → castle → sky → …). `false` or a
+   * single biome keeps the whole run in one place. Read when a run starts.
+   */
+  biomes?: boolean | BiomeId[];
+  /** Per-biome theme overrides (preset name or overrides on that biome's preset). `theme` is the grass biome. */
+  biomeThemes?: Partial<Record<BiomeId, ThemeInput>>;
+  /** Run speed grows a little at every flagpole (default true). Read when a run starts. */
+  speedUp?: boolean;
+  /**
+   * Background music — none by default. A URL, or `{ src, volume }` where `src` may map biomes to
+   * URLs (`{ grass: '…', castle: '…', default: '…' }`). Plays only during a run; follows `muted`.
+   */
+  music?: MusicInput;
+  /** In-canvas pause button (top-right, in the portrait's slot while a run is on). Default true. */
+  pauseButton?: boolean;
+  /** No screen shake and no weather particles. Default: the user's `prefers-reduced-motion`. */
+  reducedMotion?: boolean;
   /** Playable roster (default: `BUILTIN_CHARACTERS`, Mario first). The first is the default pick. */
   characters?: CharacterDef[];
   /** Initial character id (a stored choice wins when `storage` remembers one). */

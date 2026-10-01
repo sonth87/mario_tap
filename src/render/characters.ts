@@ -63,9 +63,14 @@ const zelda: Palette = {
 const daisy: Palette = { ...peach, Y: '#C86820', P: '#F8A838', Q: '#C86810', W: '#F8E858', R: '#3CB043', B: '#3CB043' };
 const rosalina: Palette = { ...peach, Y: '#F8ECB0', C: '#D8D8F0', P: '#8CE0F8', Q: '#3C8CC8', W: '#FFFFFF', R: '#E52521' };
 
-const luffy: Palette = { Y: '#F8D060', R: '#D82800', K: '#101010', M: '#901010', T: '#F8F8F8', S: '#FCB068', B: '#2858B8', W: '#6890E0', Q: '#F8D800', D: '#A06830' };
+const luffy: Palette = {
+  O: '#2A1A28', Y: '#F0C050', H: '#C08830', R: '#D83020', V: '#901818', K: '#181018', M: '#901010', T: '#F8F8F8',
+  S: '#F8C088', Z: '#D08858', B: '#3058B0', N: '#203878', W: '#E8E8F0', Q: '#F8D800', D: '#8A5A30',
+};
 const zoro: Palette = {
-  G: '#48B048', E: '#F8D800', S: '#F0A868', K: '#101010', W: '#F8F8F8', H: '#207830', X: '#F8F8F8', Z: '#D82800', Q: '#382010', P: '#303038', D: '#101010',
+  O: '#141414', N: '#2A2A2E', M: '#4A4A52', G: '#48B048', E: '#F8D800', S: '#F0B080', Z: '#C88050', K: '#101010',
+  W: '#F4F4F4', V: '#B8C0D0', H: '#58A848', J: '#2E7030', X: '#F8F8F8', R: '#D82800', Q: '#382010',
+  P: '#2A2E34', F: '#181C20', D: '#3A3A3A',
 };
 const sanji: Palette = { Y: '#F8E070', S: '#FCC8A0', K: '#20202C', L: '#4A4A60', B: '#3C8CF0', W: '#F8F8F8', R: '#F85818', D: '#3A2412' };
 const robin: Palette = { H: '#23232F', L: '#4C4C6C', S: '#F4C090', A: '#DCA070', K: '#101010', R: '#C03050', V: '#6A3090', J: '#2A2A3A', D: '#6A3090' };
@@ -116,12 +121,12 @@ export const BUILTIN_CHARACTERS: CharacterDef[] = [
   },
   {
     id: 'luffy', name: 'Luffy', sprites: LUFFY, palette: luffy,
-    firePalette: { ...luffy, R: WHITE, B: '#D82800', W: '#F87858' },
+    firePalette: { ...luffy, R: WHITE, V: '#B8C0D0', B: '#D82800', N: '#901818', W: '#F87858' },
     starPalettes: [{ ...luffy, R: '#00A800', B: '#F8D800' }, { ...luffy, R: '#F8D800', B: '#00A800' }, { ...luffy, R: '#000000', B: '#C84C0C' }],
   },
   {
     id: 'zoro', name: 'Zoro', sprites: ZORO, palette: zoro,
-    firePalette: { ...zoro, W: '#D82800', H: '#F8F8F8' },
+    firePalette: { ...zoro, W: '#D82800', V: '#901818', H: '#F8F8F8', J: '#B8C0D0' },
     starPalettes: [{ ...zoro, W: '#58D854', H: '#F8D800' }, { ...zoro, W: '#F8D800', H: '#C84C0C' }, { ...zoro, W: '#68A8FC', H: '#0058F8' }],
   },
   {

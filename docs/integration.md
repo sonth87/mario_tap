@@ -5,20 +5,20 @@ Package giao **mã nguồn TypeScript** (`exports` trỏ thẳng vào `src/`), k
 
 Package là một project độc lập (có `package.json`, script, test và trang demo riêng), không phụ thuộc vào app nào. Ba cách dùng:
 
-1. **Từ npm / git:** publish (bỏ `"private": true` trong `package.json`) hoặc cài thẳng từ git, rồi `pnpm add @sonth87/mario-runner`.
-2. **Liên kết cục bộ:** `pnpm add @sonth87/mario-runner@link:../mario-runner` (hoặc `file:`), hoặc khai báo `workspace:*` nếu cả hai nằm trong một pnpm workspace.
+1. **Từ npm / git:** publish (bỏ `"private": true` trong `package.json`) hoặc cài thẳng từ git, rồi `pnpm add @sonth87/mario-tap`.
+2. **Liên kết cục bộ:** `pnpm add @sonth87/mario-tap@link:../mario_tap` (hoặc `file:`), hoặc khai báo `workspace:*` nếu cả hai nằm trong một pnpm workspace.
 3. **Copy mã nguồn:** chép thư mục `src/` vào app và import theo đường dẫn tương đối (package không có phụ thuộc runtime nào).
 
-**Chạy riêng, không cần app chủ:** `pnpm install && pnpm dev` mở trang demo (cổng 5190). `pnpm build` tạo `dist/`, một site tĩnh hoàn chỉnh (HTML + 1 file JS khoảng 18 KB gzip, đường dẫn tương đối): đặt lên static host nào cũng chạy, hoặc nhúng bằng `<iframe src=".../dist/index.html">`. Mã nguồn trang demo nằm ở `demo/main.ts`, cũng là ví dụ dùng API JavaScript thuần.
+**Chạy riêng, không cần app chủ:** `pnpm install && pnpm dev` mở trang demo (cổng 5190). `pnpm build` tạo `dist/`, một site tĩnh hoàn chỉnh (HTML + 1 file JS khoảng 36 KB gzip, đường dẫn tương đối): đặt lên static host nào cũng chạy, hoặc nhúng bằng `<iframe src=".../dist/index.html">`. Mã nguồn trang demo nằm ở `demo/main.ts`, cũng là ví dụ dùng API JavaScript thuần.
 
 **Yêu cầu:**
-- Bundler hiểu TypeScript: Vite, Next (thêm `transpilePackages: ['@sonth87/mario-runner']`), esbuild…
+- Bundler hiểu TypeScript: Vite, Next (thêm `transpilePackages: ['@sonth87/mario-tap']`), esbuild…
 - `tsconfig` của app bật `moduleResolution: "bundler"`.
 - Với **Vite + React**, thêm `resolve.dedupe: ['react', 'react-dom']`. Package khai báo React là peer dependency, nên nếu không dedupe có thể bị nạp 2 bản React.
 
 ## 2. React
 ```tsx
-import { MarioGame, type GameStats } from '@sonth87/mario-runner/react';
+import { MarioGame, type GameStats } from '@sonth87/mario-tap/react';
 
 function Arcade() {
   const [stats, setStats] = useState<GameStats | null>(null);
@@ -32,13 +32,13 @@ function Arcade() {
   );
 }
 ```
-- Nên **lazy-load** (`React.lazy(() => import(...))`) để khoảng 14 KB gzip của game chỉ tải khi cần.
+- Nên **lazy-load** (`React.lazy(() => import(...))`) để khoảng 35 KB gzip của game chỉ tải khi cần.
 - Game được tạo **một lần mỗi lần mount**; unmount là dọn sạch (dừng vòng lặp, gỡ listener, đóng AudioContext).
 - Prop `paused` để tạm dừng có kiểm soát; `onReady(handle)` trả về handle để điều khiển trực tiếp.
 
 ## 3. JavaScript thuần
 ```ts
-import { createMarioGame } from '@sonth87/mario-runner';
+import { createMarioGame } from '@sonth87/mario-tap';
 const game = createMarioGame(hostElement, options);
 game.press(); game.pause(); game.resume(); game.restart();
 game.update({ muted: true, labels: { … } });
@@ -58,25 +58,33 @@ game.destroy();
 | `showPrompts` | `true` | ✔ | lời nhắc bắt đầu và màn GAME OVER |
 | `scenery` | `true` | ✔ | 5 lớp nền parallax (núi, mây, đồi, cây, bụi); tắt thì chỉ còn màu trời |
 | `theme` | `'day'` | ✔ | tên preset hoặc object ghi đè, xem §4b |
-| `background` | theo theme | ✔ | lối tắt cho `theme.sky`: một màu, hoặc `null` để trong suốt |
-| `characters` | Mario, Luigi, Peach, Zelda | — | danh sách nhân vật; nhân vật đầu tiên là mặc định (§4c) |
+| `background` | theo theme | ✔ | lối tắt cho `theme.sky`: một màu, hoặc `null` để trong suốt; áp dụng cho **mọi biome** |
+| `biomes` | `true` | ✔ (từ lượt sau) | vòng biome đổi ở mỗi cột cờ: `true` = đồng cỏ → sa mạc → tuyết → lâu đài → trên mây; mảng tự chọn, ví dụ `['grass', 'castle']`; `false` hoặc `['snow']` = cả lượt ở một biome (§4d) |
+| `biomeThemes` | preset của từng biome | ✔ | ghi đè màu theo biome: `{ desert: 'dusk', castle: { lava: '#0f0' } }` (§4d) |
+| `speedUp` | `true` | ✔ (từ lượt sau) | tốc độ tăng một bậc (+10%) sau mỗi cột cờ, tối đa 5 bậc (150%) |
+| `music` | không có | ✔ | nhạc nền do app cung cấp, mặc định **không có nhạc** (§4e) |
+| `pauseButton` | `true` | ✔ | nút ⏸ trong canvas, nằm ở chỗ ảnh nhân vật khi đang chơi |
+| `reducedMotion` | theo `prefers-reduced-motion` | ✔ | tắt rung màn hình và hạt thời tiết |
+| `characters` | 17 nhân vật dựng sẵn (`BUILTIN_CHARACTERS`) | — | danh sách nhân vật; nhân vật đầu tiên là mặc định (§4c) |
 | `character` | nhân vật đầu tiên | — | id nhân vật ban đầu; nếu đã lưu lựa chọn trước đó thì lựa chọn đã lưu được ưu tiên |
 | `credit` | SONTH87 → github.com/sonth87 | ✔ | `{ text, url? }` vẽ ở góc trên trái, ngay trên điểm số ; chỉ bấm được giữa các lượt (mở tab mới); `null` để ẩn |
 | `soundButton` | `true` | ✔ | nút loa tròn ở góc trên phải, cạnh ảnh nhân vật; bấm để tắt/bật tiếng, lúc nào cũng bấm được và không tính là cú nhảy. Tắt đi nếu app có nút riêng |
 | `onMutedChange(muted)` | | ✔ | gọi khi người chơi bấm nút loa trong canvas (để app đồng bộ trạng thái) |
 | `characterButton` | `true` | ✔ | ảnh nhân vật ở góc trên phải của canvas, bấm để mở bảng chọn. Tắt đi nếu app tự làm nút (§4c) |
-| `labels` | tiếng Anh | ✔ | `start, gameOver, restart, score, best, newRecord, metres, chooseCharacter, title, logo, mute, unmute`; `title` là dòng chữ nhỏ dưới bộ đếm xu ở giữa HUD (ví dụ tên game), mặc định để trống; `logo` là chữ trên bảng tiêu đề hiện trước mỗi lượt (trượt lên khi bắt đầu), mặc định `'SKYLINE'`, font pixel chỉ có A–Z, 0–9 và `. ! - '` (chữ thường tự viết hoa), chuỗi rỗng thì bỏ bảng, chỉ hiện lời nhắc; package không có i18n riêng, app tự dịch rồi truyền vào |
-| `keyboardTarget` | `'window'` | — | `'element'` = chỉ nghe Space khi khung game đang được focus |
+| `labels` | tiếng Anh | ✔ | `start, gameOver, restart, score, best, newRecord, metres, chooseCharacter, title, logo, mute, unmute, biomeGrass, biomeDesert, biomeSnow, biomeCastle, biomeSky, speedUp, paused, resume, runStats` (`runStats` là mẫu có `{distance} {coins} {kills} {flags}`); chữ trong canvas dùng font pixel (A–Z, 0–9, `. ! - ' + × : / · ? , ( ) %`), chuỗi có ký tự khác (ví dụ tiếng Việt có dấu) tự chuyển sang font hệ thống; `title` là dòng chữ nhỏ dưới bộ đếm xu ở giữa HUD (ví dụ tên game), mặc định để trống; `logo` là chữ trên bảng tiêu đề hiện trước mỗi lượt (trượt lên khi bắt đầu), mặc định `'SKYLINE'`, font pixel chỉ có A–Z, 0–9 và `. ! - '` (chữ thường tự viết hoa), chuỗi rỗng thì bỏ bảng, chỉ hiện lời nhắc; package không có i18n riêng, app tự dịch rồi truyền vào |
+| `keyboardTarget` | `'window'` | — | `'element'` = chỉ nghe phím khi khung game đang được focus |
 | `autoPauseOnHidden` | `true` | — | tạm dừng khi tab bị ẩn |
 | `onStats(stats)` | | ✔ | gọi khi điểm, coin, mét, trạng thái hoặc sức mạnh thay đổi (khoảng vài lần/giây, không phải mỗi frame) |
-| `onEvent(event, stats)` | | ✔ | `start, jump, coin, stomp, kick, bump, break, powerAppear, powerUp, powerDown, fireball, star, flag, die, gameOver` |
+| `onEvent(event, stats)` | | ✔ | `start, jump, coin, stomp, kick, bump, break, powerAppear, powerUp, powerDown, fireball, star, flag, cannon, die, gameOver, biome` (vào biome mới, xem `stats.biome`), `speedUp` (xem `stats.speedLevel`), `lift` (bắt đầu trượt lên mây / xuống dây leo) |
 | `onGameOver(stats)` | | ✔ | gọi sau khi đã chốt điểm cao nhất; nếu vừa phá kỷ lục thì `stats.newRecord === true` |
 
-`GameStats = { status: 'idle'|'playing'|'dying'|'over', score, distance, coins, kills, bonus (điểm cột cờ), power: 0|1|2, character (id), canChangeCharacter, best: { score, distance, coins }, newRecord }`
+`GameStats = { status: 'idle'|'playing'|'dying'|'over', score, distance, coins, kills, bonus (cột cờ + chuỗi đạp), flags, biome: 'grass'|'desert'|'snow'|'castle'|'sky', speedLevel: 0…5, power: 0|1|2, character (id), canChangeCharacter, best: { score, distance, coins }, newRecord, paused }`
+
+`game.pause()` / prop `paused` là **tạm dừng của app**: im lặng, không vẽ gì, bỏ qua mọi lần nhấn. Tạm dừng của **người chơi** (nút ⏸, Esc, P) thì hiện bảng PAUSED và nhấn để chơi tiếp; `stats.paused` phản ánh trạng thái này.
 
 ### 4b. Theme
 ```ts
-theme: 'night'                                   // preset: 'day' | 'dusk' | 'night' | 'underground' | 'glass'
+theme: 'night'                                   // preset: 'day' | 'dusk' | 'night' | 'underground' | 'glass' | 'desert' | 'snow' | 'castle' | 'sky'
 theme: { base: 'day', sky: '#222244' }           // ghi đè trên một preset
 theme: { sky: ['#0b1020', '#3b2d6b'], trees: null, blocks: { O: '#1070A0' } }
 ```
@@ -92,6 +100,9 @@ theme: { sky: ['#0b1020', '#3b2d6b'], trees: null, blocks: { O: '#1070A0' } }
 | `cloudPlatform` · `flagpole` | màu bục mây `{ fill, shade, outline }` và cột cờ `{ shaft, ball, flag, emblem }` |
 | `hud` | màu từng phần HUD: `{ credit, score, coin, best, bestLabel, distance, subtitle }` |
 | `text` · `textAccent` · `textOutline` · `panel` | màu chữ lời nhắc/bảng chọn và màu nền panel |
+| `style` | `{ mountains, trees }`: núi `'peaks'` · `'snowcaps'` · `'pyramids'` · `'castles'` · `'cloudbanks'`, cây `'mixed'` · `'pines'` · `'cacti'`: hình dạng lớp núi và lớp cây |
+| `weather` | `'snow'`, `'sand'`, `'embers'` hoặc `null`: hạt trang trí trên nền |
+| `lava` | màu dung nham dưới đáy hố, hoặc `null` |
 
 Preset `glass` có trời trong suốt và các lớp nền bán trong suốt, hợp với khung kính hoặc nền mờ phía sau. Danh sách preset xuất ra ở `THEMES`, hàm gộp là `resolveTheme()`.
 
@@ -108,8 +119,28 @@ Preset `glass` có trời trong suốt và các lớp nền bán trong suốt, h
 
   Xem `render/sprites/princess.ts` và `render/characters.ts` làm mẫu.
 
+### 4d. Biome
+- Mỗi cột cờ chuyển sang biome kế tiếp trong `biomes`. Vào biome `'sky'` là các bậc lên mây, ra khỏi nó là dây leo (xem [gameplay.md](gameplay.md) §8b); với `biomes: ['sky']` thì cả lượt chạy trên mây và mốc là cột cờ thường. Biome đổi **ngay sau cột cờ**: nền trời và phong cảnh chuyển mờ dần khi ranh giới đi qua màn hình, ô đất/gạch tô màu theo biome của từng cột.
+- `theme` là màu của **đồng cỏ**. Các biome khác dùng preset `desert` / `snow` / `castle` (bảng `BIOME_THEMES`), ghi đè được bằng `biomeThemes`: một tên preset, hoặc object ghi đè dựa trên preset của biome đó.
+- App đặt trời trong suốt (`theme: 'glass'`, `sky: null`, `background: null`) hoặc đặt `background` thì **mọi biome giữ nguyên trời đó**, để game nhúng không đột ngột phủ màu lên trang.
+- Luật riêng của từng biome: xem [gameplay.md](gameplay.md) §8.
+
+### 4e. Nhạc nền (tùy chọn)
+Package **không kèm nhạc**. App muốn có nhạc thì truyền URL của mình:
+```ts
+music: '/audio/theme.mp3'
+music: { src: { grass: '/a.mp3', castle: '/castle.mp3', default: '/b.mp3' }, volume: 0.4 }
+```
+- Chỉ phát khi đang chơi; dừng khi tạm dừng, khi chết, khi tắt tiếng (`muted` / nút loa) hoặc khi tab bị ẩn. Mỗi lượt mới phát lại từ đầu.
+- Dùng `src` theo biome thì nhạc tự đổi khi sang biome mới; biome không có trong danh sách thì dùng `default`.
+- Lần phát đầu tiên xảy ra ngay trong thao tác bấm bắt đầu, nên chạy được trên iOS/Android (chính sách autoplay).
+- Muốn tự quản nhạc thì nghe `onEvent`: `start`, `biome`, `die`, `gameOver`.
+
 ## 5. Input và khả năng truy cập
 - **Click chuột trái/phải, chạm và bút** chỉ được nhận **bên trong khung chứa**. Menu chuột phải bị chặn trong khung đó.
+- **Phím nhảy**: Space, ↑, W, Enter. **Phím tạm dừng**: Esc, P.
+- ↑ / W / Enter / Esc / P **chỉ được nhận khi focus đang ở game hoặc không ở đâu cả** (body), nên không bao giờ "cướp" Enter/Esc của nút hay dialog của app.
+- **Âm thanh trên iOS**: AudioContext được tạo/resume ngay trong sự kiện bấm (pointerdown/keydown), nên hiệu ứng âm thanh chạy được trên Safari iOS.
 - **Space**: ở chế độ `'window'`, game chặn Space ngay từ pha capture, cả keydown lẫn keyup, trong suốt thời gian game được mount:
   - nút đang focus phía sau (ví dụ nút đóng dialog) sẽ không bị "bấm" nhầm;
   - phím tắt Space của app cũng không nhận được;
@@ -122,7 +153,7 @@ Một app React muốn tự vẽ HUD bằng DOM thay cho HUD trong canvas:
 
 ```tsx
 import { useState } from 'react';
-import { MarioGame, BUILTIN_CHARACTERS, characterPortraitUrl, type GameStats, type MarioGameHandle } from '@sonth87/mario-runner/react';
+import { MarioGame, BUILTIN_CHARACTERS, characterPortraitUrl, type GameStats, type MarioGameHandle } from '@sonth87/mario-tap/react';
 
 function Arcade() {
   const [stats, setStats] = useState<GameStats | null>(null);
@@ -163,6 +194,6 @@ function Arcade() {
 [cat] SONTH87            (coin) ×00              BEST 000000  (portrait) (speaker)
 000000                  MARIO RUNNER                   0m
 ```
-- Trên trái: credit rồi điểm. Giữa: bộ đếm xu và `labels.title`. Trên phải: kỷ lục và số mét, rồi ảnh nhân vật và nút loa.
+- Trên trái: credit rồi điểm. Giữa: bộ đếm xu và `labels.title`. Trên phải: kỷ lục và số mét, rồi ảnh nhân vật và nút loa. Trong lúc chơi, ô ảnh nhân vật biến thành nút ⏸ (`pauseButton`).
 - Thế giới cao 208 px; khung chứa nên có tỉ lệ khoảng **840 × 370** (hệ số phóng khoảng 1,8 nên chữ và nút vừa mắt). Khung tràn cả màn hình vẫn chạy nhưng mọi thứ sẽ to hơn nhiều.
 - Trang demo (`demo/`) đặt game trong khung 840 × 370 kiểu kính, dùng `theme: 'glass'`.

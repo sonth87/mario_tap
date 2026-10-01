@@ -1,6 +1,6 @@
 {
   "name": "@sonth87/mario-tap",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "description": "One-button auto-running infinite Mario-style mini game (Canvas 2D, zero runtime deps, optional React wrapper)",
   "author": "Sonth87 <sonth87@gmail.com> (https://github.com/sonth87)",

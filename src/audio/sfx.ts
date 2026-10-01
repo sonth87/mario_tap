@@ -5,8 +5,9 @@ type Wave = OscillatorType;
 const VOLUME = 0.05;
 
 /**
- * 8-bit style sound effects synthesised with Web Audio (no audio files). The AudioContext is
- * created lazily on the first sound, which always follows a user gesture (click / Space).
+ * 8-bit style sound effects synthesised with Web Audio (no audio files). The AudioContext must be
+ * created / resumed INSIDE a user gesture (iOS Safari keeps it suspended otherwise, and sounds are
+ * played later from the game loop), so the engine calls `unlock()` from every press handler.
  */
 export class Sfx {
   private ctx: AudioContext | null = null;
@@ -61,6 +62,13 @@ export class Sfx {
     src.start();
   }
 
+  /** Call from a user-gesture handler (pointerdown / keydown). Cheap after the first time. */
+  unlock(): void {
+    if (this.muted && !this.ctx) return;
+    const ctx = this.audio();
+    if (ctx && ctx.state === 'suspended') void ctx.resume().catch(() => undefined);
+  }
+
   play(event: GameEvent): void {
     if (this.muted) return;
     try {
@@ -88,6 +96,9 @@ export class Sfx {
       case 'flag': return this.notes([1319, 1175, 1047, 988, 880, 784, 698, 659, 587, 523], 0.05);
       case 'die': return this.notes([494, 698, 698, 698, 659, 587, 523, 330, 262], 0.11);
       case 'gameOver': return this.notes([523, 392, 330, 220, 247, 208, 196], 0.14, 'triangle');
+      case 'speedUp': return this.notes([523, 659, 784, 1047, 784, 1047], 0.05);
+      case 'biome': return;
+      case 'lift': return this.notes([392, 523, 659, 784, 1047, 1319, 1568], 0.07, 'triangle');
     }
   }
 

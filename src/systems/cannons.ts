@@ -9,6 +9,7 @@ import {
 import { Tile } from '../core/tiles';
 import { createBullet } from '../entities/factory';
 import type { GameState } from '../game/state';
+import { sameLayer } from './lift';
 
 /**
  * Pseudo-random reload time. Not drawn from the level RNG, so gameplay never changes what the
@@ -28,7 +29,7 @@ export function updateCannons(s: GameState): void {
   const m = s.mario;
   for (let col = first; col <= last; col++) {
     for (let row = 0; row < VIEW_ROWS; row++) {
-      if (s.map.get(col, row) !== Tile.CannonTop) continue;
+      if (s.map.get(col, row) !== Tile.CannonTop || !sameLayer(s, col * TILE)) continue;
       const key = col * VIEW_ROWS + row;
       const left = (s.cannonTimers.get(key) ?? 40 + ((col * 37) % CANNON_INTERVAL_MIN)) - 1;
       if (left > 0) {

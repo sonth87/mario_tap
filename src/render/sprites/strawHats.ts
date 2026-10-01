@@ -1,5 +1,5 @@
 import type { CharacterSprites } from '../../core/character';
-import { BIG_LEGS, hero, legs, SMALL_LEGS } from './heroes';
+import { BIG_LEGS, bigFrames, hero, legs, SMALL_LEGS, smallFrames, type LegSet } from './heroes';
 
 /**
  * Straw Hat crew, facing right, NES-style: small 16×16 = 13-row top + 3-row legs, big 16×32 =
@@ -28,39 +28,71 @@ const LUFFY_SMALL = [
   '....BBBBBBB.....',
 ];
 
-const LUFFY_BIG = [
-  '.....YYYYYY.....',
-  '....YYYYYYYY....',
-  '....YYYYYYYY....',
-  '....RRRRRRRR....',
-  'YYYYYYYYYYYYYYY.',
-  '.YYYYYYYYYYYYY..',
-  '...KKKKSSSKS....',
-  '..KKKKSSSSKSS...',
-  '..KKKSSSSSSSSS..',
-  '..KKSSSSSSSSSS..',
-  '...KSSSSSMTTTM..',
-  '....SSSSSSMMM...',
-  '.....SSSSSS.....',
-  '....RRSSSSRR....',
-  '...SRRSSSSRRS...',
-  '..SSRRSSSSRRSS..',
-  '..SSRRSSSSRRSS..',
-  '..SSRRRSSRRRSS..',
-  '..SSRRRRRRRRSS..',
-  '..SSQQQQQQQQSS..',
-  '..SSBBBBBBBBSS..',
-  '....BBBBBBBB....',
-  '....BBBBBBBB....',
-  '....BBBBBBBB....',
-  '....BBB..BBB....',
-  '....WWW..WWW....',
+/**
+ * Big Luffy, detailed style: dark outline (O) and a shade tone per colour — H hat shade · V vest
+ * shade · Z skin shade · N shorts shade.
+ */
+const LUFFY_BIG_HEAD = [
+  '.....OOOOOO.....',
+  '....OYYYYYYO....',
+  '...OYYYYYYYHO...',
+  '...ORRRRRRRRO...',
+  '.OOYYYYYYYYYHOO.',
+  'OYYYYYYYYYYYYHHO',
+  '.OOKKKKKKSKOOOO.',
+  '..OKKKKKSSSKSO..',
+  '..OKKKKSSSSKSSO.',
+  '..OKKKZZSSSSSSO.',
+  '..OKKKSSSSSSSSO.',
+  '...OKKSSSSMTTO..',
+  '....OZSSSSSMMO..',
 ];
 
-export const LUFFY: CharacterSprites = hero(
-  LUFFY_SMALL, reach(LUFFY_SMALL, 9), legs(SMALL_LEGS, 'S', 'S', 'D'),
-  LUFFY_BIG, reach(LUFFY_BIG, 13), legs(BIG_LEGS, 'S', 'S', 'D'),
-);
+const LUFFY_BIG_TOP = [
+  ...LUFFY_BIG_HEAD,
+  '.....OOZSSSOO...',
+  '....ORRRZZRO....',
+  '...ORRRRSSSRO...',
+  '...ORVRRSSSRO...',
+  '...ORVSSZRRRO...',
+  '...ORVSSZRRRO...',
+  '...ORVSSZRRVO...',
+  '...ORRSSZRRVO...',
+  '...OBBZSSOBBO...',
+  '...OBBOSSOBNO...',
+  '...OBBBOOBBNO...',
+  '...OBBBBBBBNO...',
+];
+
+const LUFFY_BIG_TOP_JUMP = [
+  ...LUFFY_BIG_HEAD,
+  '.....OOZSSSOOSSO',
+  '....ORRRZZROSSO.',
+  '...ORRRRRRSSSO..',
+  '...ORVRRRRRSO...',
+  '...ORVRRRRRRO...',
+  '...ORVRRRRRVO...',
+  '...ORRRRRRRVO...',
+  '..OSSORRRRRVO...',
+  '..OSSOBBBBBBO...',
+  '...OOBBBBBBNO...',
+  '...OBBBBBBBNO...',
+  '...OBBBBBBBNO...',
+];
+
+/** Shorts hems, bare shins, sandals — hand-drawn per frame (7 rows). */
+const LUFFY_BIG_LEGS: LegSet = {
+  stand: ['...OBBNO.OBBNO..', '...OWWWO.OWWWO..', '....OSSO..OSSO..', '....OSZO..OSZO..', '....OSSO..OSSO..', '...ODDDDO.ODDDDO', '...OOOOO..OOOOO.'],
+  run0: ['..OBBNO..OBBNO..', '..OWWWO..OWWWO..', '.OSSO.....OSSO..', 'OSZO......OSZO..', 'OSSO.......OSSO.', 'ODDDO......ODDDO', 'OOOO.......OOOO.'],
+  run1: ['....OBBBBNO.....', '....OWWWWWO.....', '.....OSSSO......', '.....OSZSO......', '....OSSOSSO.....', '....ODDDDDDO....', '....OOOOOOOO....'],
+  run2: ['...OBBNO.OBBNO..', '...OWWWO.OWWWO..', '..OSSO....OSSO..', '..OSZO....OSZO..', '.OSSO......OSSO.', '.ODDDO.....ODDDO', '.OOOO......OOOO.'],
+  jump: ['..OBBNO..OBBBNO.', '.OWWWO..OWWWWO..', '.OSSO...OSSSSSO.', 'OSZO.....OOODDO.', 'OSSO.......ODDO.', 'ODDDO.......OO..', 'OOOO............'],
+};
+
+export const LUFFY: CharacterSprites = {
+  ...smallFrames(LUFFY_SMALL, reach(LUFFY_SMALL, 9), legs(SMALL_LEGS, 'S', 'S', 'D')),
+  ...bigFrames(LUFFY_BIG_TOP, LUFFY_BIG_TOP_JUMP, LUFFY_BIG_LEGS),
+};
 
 // ── Zoro ── G hair · E earrings · S skin · K eye, mouth & sash · W shirt · H haramaki · X / Z sword hilts · Q scabbards · P trousers · D boots
 const ZORO_SMALL = [
@@ -79,39 +111,71 @@ const ZORO_SMALL = [
   'QQ..PPPPPPP.Z...',
 ];
 
-const ZORO_BIG = [
-  '....G..G..G.....',
-  '...GGG.GG.GG....',
-  '..GGGGGGGGGGG...',
-  '..GGGGGGGGGGGG..',
-  '..GGGGGGSSSSSS..',
-  '..GGGGSSSSKSSS..',
-  '..GEGSSSSSKSSSS.',
-  '..GEGSSSSSSSSSSS',
-  '...GSSSSSSSSSSS.',
-  '....SSSSSSKKKS..',
-  '.....SSSSSSSS...',
-  '......SSSSSS....',
-  '.....WWWWWWW....',
-  '....WWWWWWWWW...',
-  '...WWWWWWWWWWW..',
-  '..SWWWWWWWWWWWS.',
-  '..SSWWWWWWWWWSS.',
-  '..SSWWWWWWWWWSS.',
-  '..SSHHHHHHHHHSS.',
-  '..SSHHHHHHHHHSS.',
-  '....HHHHHHHHHXXX',
-  '....KKKKKKKKKZZ.',
-  '..QQPPPPPPPPP...',
-  '.QQ.PPPPPPPPP...',
-  'QQ..PPPPPPPPP...',
-  '....PPPP.PPPP...',
+/**
+ * Big Zoro, detailed style: black bandana with tails flying back. O outline · N bandana · M bandana
+ * shade · Z skin shade · V shirt shade · J haramaki shade · F trousers shade · R red hilt.
+ */
+const ZORO_BIG_HEAD = [
+  '................',
+  '.....OOOOOO.....',
+  '...OONNNNNNOO...',
+  '..ONNNNNNNNNNO..',
+  '..ONMNNNNNNNNNO.',
+  '.OONMNNNNNNNNNO.',
+  'ONNMNNNNNNNNNNO.',
+  'ONMOONNNSSSSKSO.',
+  '.OO.ONNSSSSSKSO.',
+  '.....OEZSSSSSSSO',
+  '.....OSZSSSSSSO.',
+  '......OSSSSKKSO.',
+  '.......OZSSSSO..',
 ];
 
-export const ZORO: CharacterSprites = hero(
-  ZORO_SMALL, reach(ZORO_SMALL, 9), legs(SMALL_LEGS, 'P', 'D'),
-  ZORO_BIG, reach(ZORO_BIG, 13), legs(BIG_LEGS, 'P', 'D'),
-);
+const ZORO_BIG_TOP = [
+  ...ZORO_BIG_HEAD,
+  '.......OOZZOO...',
+  '.....OWWWZZWO...',
+  '....OWWWWZWWWO..',
+  '....OVWWSSWWWO..',
+  '....OVWSZWWWWO..',
+  '....OVWSZWWVWO..',
+  '....OHHSZHHHHOXO',
+  '....OJHSSHHHHORO',
+  '....OJHOSOHHHOOO',
+  '..OOOPPPOPPPPO..',
+  '.OQQOPPPPPPPFO..',
+  '.OO.OPPPPPPPFO..',
+];
+
+const ZORO_BIG_TOP_JUMP = [
+  ...ZORO_BIG_HEAD,
+  '.......OOZZOOSSO',
+  '.....OWWWZZOSSO.',
+  '....OWWWWWWSSO..',
+  '....OVWWWWWWO...',
+  '....OVWWWWWWO...',
+  '....OVWWWWWVO...',
+  '..OSSOHHHHHHOXO.',
+  '..OSSOHHHHHHORO.',
+  '...OOJHHHHHHOO..',
+  '..OOOPPPPPPPPO..',
+  '.OQQOPPPPPPPFO..',
+  '.OO.OPPPPPPPFO..',
+];
+
+/** Trousers and boots, hand-drawn per frame (7 rows). */
+const ZORO_BIG_LEGS: LegSet = {
+  stand: ['....OPPFO.OPPFO.', '....OPPFO.OPPFO.', '....OPPFO.OPPFO.', '....ODDDO.ODDDO.', '...ODDDDO.ODDDDO', '...ODDDDO.ODDDDO', '...OOOOO..OOOOO.'],
+  run0: ['...OPPFO..OPPFO.', '..OPPFO....OPPFO', '.OPPFO.....OPPFO', '.ODDDO.....ODDDO', 'ODDDDO....ODDDDO', 'ODDDO.....ODDDDO', 'OOOO......OOOOO.'],
+  run1: ['.....OPPPPFO....', '.....OPPOPFO....', '.....OPPOPFO....', '....ODDDODDO....', '...ODDDDODDDO...', '...ODDDDODDDDO..', '...OOOOOOOOOO...'],
+  run2: ['....OPPFO.OPPFO.', '...OPPFO...OPPFO', '..OPPFO....OPPFO', '..ODDDO....ODDDO', '.ODDDDO...ODDDDO', '.ODDDO....ODDDDO', '.OOOO.....OOOOO.'],
+  jump: ['...OPPFO..OPPPFO', '..OPPFO..OPPPPFO', '.OPPFO...ODDDDO.', '.ODDDO...ODDDDO.', 'ODDDDO....OOOO..', 'ODDDO...........', 'OOOO............'],
+};
+
+export const ZORO: CharacterSprites = {
+  ...smallFrames(ZORO_SMALL, reach(ZORO_SMALL, 9), legs(SMALL_LEGS, 'P', 'D')),
+  ...bigFrames(ZORO_BIG_TOP, ZORO_BIG_TOP_JUMP, ZORO_BIG_LEGS),
+};
 
 // ── Sanji ── Y hair · S skin · K eye & suit · L lapels · B shirt · W cigarette · R ember · D shoes
 const SANJI_SMALL = [

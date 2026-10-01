@@ -30,13 +30,19 @@ export const Tile = {
   PickStar: 16,
   PickMushroom: 17,
   PickFlower: 18,
+  /** Ground surface in the snow biome: solid, slippery (core/constants ICE_*). */
+  Ice: 19,
+  /** Solid cloud: the floor (and walls) of the sky biome. */
+  CloudFloor: 20,
+  /** Hanging vine: not solid; touching it in the sky starts the ride back down to the ground. */
+  Vine: 21,
 } as const;
 
 export type TileId = (typeof Tile)[keyof typeof Tile];
 
 /** Blocks movement from every side. */
 export function isSolid(t: number): boolean {
-  return t !== Tile.Empty && t !== Tile.Coin && t !== Tile.Cloud && t !== Tile.Pole && t !== Tile.PoleTop && !isPickup(t);
+  return t !== Tile.Empty && t !== Tile.Coin && t !== Tile.Cloud && t !== Tile.Pole && t !== Tile.PoleTop && t !== Tile.Vine && !isPickup(t);
 }
 
 export function isPickup(t: number): boolean {
@@ -46,6 +52,11 @@ export function isPickup(t: number): boolean {
 /** Can be stood on (solid tiles plus one-way cloud platforms). */
 export function isStandable(t: number): boolean {
   return isSolid(t) || t === Tile.Cloud;
+}
+
+/** Ground-like tiles (the run surface): plain ground or ice. */
+export function isGround(t: number): boolean {
+  return t === Tile.Ground || t === Tile.Ice || t === Tile.CloudFloor;
 }
 
 export function isPole(t: number): boolean {
@@ -81,6 +92,8 @@ export const TILE_LEGEND: Record<string, TileId> = {
   $: Tile.PickStar,
   '&': Tile.PickMushroom,
   '%': Tile.PickFlower,
+  '@': Tile.CloudFloor,
+  V: Tile.Vine,
 };
 
 export const SPAWN_LEGEND = {
@@ -91,6 +104,16 @@ export const SPAWN_LEGEND = {
   p: 'paratroopa',
   /** Winged red koopa that hovers up and down in place. */
   f: 'flyer',
+  /** Spiny: walks like a goomba, cannot be stomped. */
+  s: 'spiny',
+  /** Piranha plant: write it on the cell right above the LEFT column of a 2-wide pipe. */
+  v: 'piranha',
+  /** Fire bar: the cell becomes an empty (used) block that the bar turns around. */
+  x: 'firebar',
+  /** Spike cloud: patrols the cloud floor, cannot be stomped. */
+  c: 'spikecloud',
+  /** Bird: flies toward the player at jump height. */
+  b: 'bird',
 } as const;
 
 export type SpawnKind = (typeof SPAWN_LEGEND)[keyof typeof SPAWN_LEGEND];

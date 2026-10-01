@@ -31,13 +31,26 @@ export function legs(set: LegSet, pants: string, boots: string, sole?: string): 
   return { stand: paint(set.stand), run0: paint(set.run0), run1: paint(set.run1), run2: paint(set.run2), jump: paint(set.jump) };
 }
 
-export function hero(smallTop: string[], smallTopReach: string[], small: LegSet, bigTop: string[], bigTopReach: string[], big: LegSet): CharacterSprites {
+type SmallFrames = Pick<CharacterSprites, 'smallStand' | 'smallRun' | 'smallJump'>;
+type BigFrames = Pick<CharacterSprites, 'bigStand' | 'bigRun' | 'bigJump'>;
+
+export function smallFrames(top: string[], topReach: string[], small: LegSet): SmallFrames {
   return {
-    smallStand: [...smallTop, ...small.stand],
-    smallRun: [small.run0, small.run1, small.run2].map((l) => [...smallTop, ...l]),
-    smallJump: [...smallTopReach, ...small.jump],
-    bigStand: [...bigTop, ...big.stand],
-    bigRun: [big.run0, big.run1, big.run2].map((l) => [...bigTop, ...l]),
-    bigJump: [...bigTopReach, ...big.jump],
+    smallStand: [...top, ...small.stand],
+    smallRun: [small.run0, small.run1, small.run2].map((l) => [...top, ...l]),
+    smallJump: [...topReach, ...small.jump],
   };
+}
+
+/** Works with any split of the 32 rows between top and legs (hand-drawn leg sets may be taller). */
+export function bigFrames(top: string[], topReach: string[], big: LegSet): BigFrames {
+  return {
+    bigStand: [...top, ...big.stand],
+    bigRun: [big.run0, big.run1, big.run2].map((l) => [...top, ...l]),
+    bigJump: [...topReach, ...big.jump],
+  };
+}
+
+export function hero(smallTop: string[], smallTopReach: string[], small: LegSet, bigTop: string[], bigTopReach: string[], big: LegSet): CharacterSprites {
+  return { ...smallFrames(smallTop, smallTopReach, small), ...bigFrames(bigTop, bigTopReach, big) };
 }

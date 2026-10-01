@@ -6,3 +6,5 @@ export type { GameTheme, ThemeName, ThemeInput } from '../core/theme';
 export type { CharacterDef } from '../core/character';
 export { BUILTIN_CHARACTERS } from '../render/characters';
 export { characterPortraitUrl } from '../render/portrait';
+export type { BiomeId } from '../core/biome';
+export type { MusicOptions, MusicInput } from '../audio/music';

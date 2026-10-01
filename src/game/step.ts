@@ -14,13 +14,14 @@ import {
 import { isPickup, Tile } from '../core/tiles';
 import { createEnemy, createFireball } from '../entities/factory';
 import { cullEntities, updateEntity } from '../entities/update';
-import { stepMarioBody } from '../physics/marioPhysics';
+import { onIce, stepMarioBody } from '../physics/marioPhysics';
 import { bumpBlock } from '../systems/blocks';
 import { updateCannons } from '../systems/cannons';
 import { entityInteractions, marioVsEntities } from '../systems/combat';
 import { stepFlag, tryGrabFlag } from '../systems/flag';
+import { stepLift, tryLift } from '../systems/lift';
 import { applyPowerUp, killMario, tryGrow } from '../systems/marioPower';
-import { addCoin, updateEffects } from '../systems/rewards';
+import { addCoin, spawnDust, updateEffects } from '../systems/rewards';
 import type { GameState } from './state';
 
 /** Generate ahead of the right edge, forget what is behind the left edge. */
@@ -52,6 +53,22 @@ function followCamera(s: GameState): void {
   const m = s.mario;
   s.cameraX = Math.max(s.cameraX, m.x + m.w / 2 - s.viewWidth * CAMERA_ANCHOR);
   s.maxX = Math.max(s.maxX, m.x);
+  // The biome follows the furthest point reached, so stepping back over a border does not flip it.
+  const biome = s.map.biomeAt(Math.floor((s.maxX + m.w / 2) / TILE));
+  if (biome !== s.biome) {
+    s.biome = biome;
+    s.biomeFrame = s.frame;
+    s.events.push('biome');
+  }
+}
+
+/** Landing dust, turn-around dust, and a spray while Mario is still building speed on ice. */
+function dust(s: GameState, move: { landed: boolean; turned: boolean }, fallSpeed: number): void {
+  const m = s.mario;
+  const feet = m.y + m.h;
+  if (move.landed && fallSpeed > 3.5) spawnDust(s, m.x + m.w / 2, feet, 2);
+  if (move.turned && m.grounded) spawnDust(s, m.dir === 1 ? m.x : m.x + m.w, feet, 1);
+  if (m.grip > 0 && s.frame % 4 === 0 && onIce(m, s.map)) spawnDust(s, m.x + m.w / 2 - m.dir * 6, feet, 1, 0.2);
 }
 
 function shoot(s: GameState): void {
@@ -63,6 +80,12 @@ function shoot(s: GameState): void {
 
 function stepPlaying(s: GameState, pressed: boolean): void {
   const m = s.mario;
+  if (s.lift) {
+    // Panning between the ground and the clouds: the world holds still.
+    stepLift(s);
+    updateEffects(s);
+    return;
+  }
   if (s.flag) {
     // The world freezes while Mario rides the flagpole (input ignored), like the original.
     stepFlag(s);
@@ -70,19 +93,32 @@ function stepPlaying(s: GameState, pressed: boolean): void {
     updateEffects(s);
     return;
   }
+  if (s.hitstop > 0) {
+    // Hit-stop: the world holds still for a few frames; a press is kept for when it ends.
+    s.hitstop -= 1;
+    s.heldPress ||= pressed;
+    return;
+  }
+  if (s.heldPress) {
+    pressed = true;
+    s.heldPress = false;
+  }
   if (m.hurtTimer > 0) m.hurtTimer -= 1;
   if (m.starTimer > 0) m.starTimer -= 1;
   if (m.shootTimer > 0) m.shootTimer -= 1;
   // User rule: with the fire flower, every press both jumps (when possible) and throws a fireball.
   if (pressed && m.power === 2) shoot(s);
 
+  const fallSpeed = m.vy;
   const move = stepMarioBody(m, s.map, pressed, s.cameraX);
   if (move.jumped) s.events.push('jump');
+  if (move.landed) m.combo = 0;
   if (move.ceiling) bumpBlock(s, move.ceiling.col, move.ceiling.row);
-  if (m.grounded) m.stride += RUN_SPEED;
+  if (m.grounded) m.stride += Math.abs(m.vx) || RUN_SPEED;
+  dust(s, move, fallSpeed);
   collectCoinTiles(s);
   tryGrow(s);
-  if (tryGrabFlag(s)) return;
+  if (tryGrabFlag(s) || tryLift(s)) return;
 
   followCamera(s);
   streamLevel(s);

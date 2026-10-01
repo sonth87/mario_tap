@@ -2,7 +2,7 @@
  * Every tunable number of the game lives here. Units: world pixels and fixed 60 Hz frames
  * (velocities are px/frame, accelerations px/frame²). One tile = 16 px = 1 metre of score.
  * Level-design limits (MAX_*) are derived from the jump arc — change the physics, re-run
- * `pnpm --filter @sonth87/mario-runner validate` (docs/level-design.md).
+ * `pnpm validate` (docs/level-design.md).
  */
 
 // ── World grid ────────────────────────────────────────────────────────────────
@@ -37,6 +37,23 @@ export const COYOTE_FRAMES = 5;
 export const MARIO_WIDTH = 12;
 export const MARIO_SMALL_HEIGHT = 15;
 export const MARIO_BIG_HEIGHT = 30;
+/**
+ * Speed-up milestones (user decision: the run gets faster): every flagpole adds SPEED_STEP to the
+ * run speed, up to MAX_SPEED_LEVEL steps. `pnpm validate` checks every chunk at the slowest and the
+ * fastest speed.
+ */
+export const SPEED_STEP = 0.135;
+/** 5 steps of +10 % → the top speed is 150 % of the start (user decision). */
+export const MAX_SPEED_LEVEL = 5;
+export const MAX_RUN_SPEED = RUN_SPEED + SPEED_STEP * MAX_SPEED_LEVEL;
+/**
+ * Ice (snow biome): Mario runs ICE_SPEED_FACTOR faster on it, and after bouncing off a wall he
+ * scrambles for grip at ICE_GRIP_FACTOR speed for ICE_GRIP_FRAMES. Both factors are tenths of the
+ * run speed on purpose: positions stay on a speed/10 lattice, which keeps the level solver finite.
+ */
+export const ICE_SPEED_FACTOR = 1.3;
+export const ICE_GRIP_FACTOR = 0.5;
+export const ICE_GRIP_FRAMES = 24;
 /** Mario's screen anchor: fraction of the view width left of him while the camera pushes. */
 export const CAMERA_ANCHOR = 0.3;
 
@@ -93,6 +110,21 @@ export const CANNON_INTERVAL_MAX = 240;
 export const CANNON_SAFE_TILES = 3;
 export const MAX_BULLETS = 3;
 
+/** Piranha plant cycle (frames): hidden in the pipe → rising → out → sinking. */
+export const PIRANHA_HIDE_FRAMES = 100;
+export const PIRANHA_MOVE_FRAMES = 30;
+export const PIRANHA_OUT_FRAMES = 70;
+/** A piranha does not come out while the player is this close (tiles) to its pipe, like the original. */
+export const PIRANHA_SAFE_TILES = 1.5;
+/** Fire bar: fireball links (8 px apart, counting the hub) and turn speed (rad / frame). */
+export const FIREBAR_LINKS = 5;
+export const FIREBAR_SPEED = 0.032;
+
+/** Stomp chain: each further stomp before landing doubles the points, up to this multiplier. */
+export const COMBO_MAX_MULTIPLIER = 8;
+/** Freeze frames after a stomp / kick — a tiny hit-stop that makes impacts land. */
+export const HITSTOP_FRAMES = 3;
+
 // ── Mario power timers ────────────────────────────────────────────────────────
 export const HURT_INVULN_FRAMES = 120;
 export const STAR_FRAMES = 600;
@@ -126,9 +158,28 @@ export const FLAG_POINTS: ReadonlyArray<readonly [minTiles: number, points: numb
 ];
 
 // ── Flagpole milestone ────────────────────────────────────────────────────────
-/** First flagpole this far (tiles) past the start, then one every FLAG_INTERVAL_TILES. */
-export const FIRST_FLAG_TILES = 120;
-export const FLAG_INTERVAL_TILES = 300;
+/**
+ * First flagpole this far (tiles) past the start, then one every FLAG_INTERVAL_TILES — each one also
+ * ends a biome, so these are the biome lengths (user decision: long enough not to feel repetitive).
+ */
+export const FIRST_FLAG_TILES = 200;
+export const FLAG_INTERVAL_TILES = 450;
+
+// ── Sky biome: lift up to the clouds / vine back down ─────────────────────────
+/** Line (tiles above the ground) of the top floating step of the climb to the clouds; the view rises by this much. */
+export const ASCENT_TOP_LINE = 9;
+/** Rows the view drops when Mario rides the vine back down to the ground. */
+export const VINE_DROP_ROWS = 8;
+/** Lowest row of the hanging vine (in the sky layer): a well-timed jump from the cloud floor reaches it. */
+export const VINE_BOTTOM_ROW = 6;
+/** Frames the camera takes to pan between the ground and the cloud layer. */
+export const LIFT_FRAMES = 70;
+/** Bonus for reaching the clouds. */
+export const LIFT_POINTS = 50;
+/** Spike cloud patrol speed and bird flight. */
+export const SPIKE_CLOUD_SPEED = 0.3;
+export const BIRD_SPEED = 0.9;
+export const BIRD_AMPLITUDE = 8;
 /** Mario / flag slide speed down the pole (px per frame). */
 export const FLAG_SLIDE_SPEED = 2;
 /** Pause at the bottom of the pole before running on. */

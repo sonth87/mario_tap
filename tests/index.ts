@@ -1,4 +1,4 @@
-/** `pnpm --filter @sonth87/mario-runner test` — runs every *.test.ts here (pure logic, no DOM). */
+/** `pnpm test` — runs every *.test.ts here (pure logic, no DOM). */
 import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { report } from './harness';

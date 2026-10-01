@@ -14,14 +14,25 @@ export function addCoin(s: GameState, x: number, y: number, popFromBlock: boolea
   floatScore(s, x, y - TILE, COIN_POINTS);
 }
 
-/** Enemy defeated by Mario (stomp, star, fireball, kicked shell or bumped block). */
-export function addKill(s: GameState, e: Entity): void {
+/**
+ * Enemy defeated by Mario (stomp, star, fireball, kicked shell or bumped block). `points` above the
+ * plain ENEMY_POINTS (stomp chains) go to the bonus, so `kills` still counts enemies.
+ */
+export function addKill(s: GameState, e: Entity, points = ENEMY_POINTS): void {
   s.kills += 1;
-  floatScore(s, e.x, e.y - 4, ENEMY_POINTS);
+  s.bonus += points - ENEMY_POINTS;
+  floatScore(s, e.x, e.y - 4, points);
 }
 
-/** Knock an enemy off the screen upside down. */
+/** Knock an enemy off the screen upside down (a piranha just vanishes in its pipe). */
 export function flipEnemy(s: GameState, e: Entity, dir: number): void {
+  if (e.kind === 'piranha') {
+    e.removed = true;
+    spawnPuff(s, e.x, e.y);
+    addKill(s, e);
+    s.events.push('kick');
+    return;
+  }
   e.mode = 'flipped';
   e.vy = -4;
   e.vx = dir * 0.8;
@@ -39,6 +50,14 @@ export function spawnDebris(s: GameState, col: number, row: number): void {
 
 export function spawnPuff(s: GameState, x: number, y: number): void {
   s.effects.push({ kind: 'puff', x, y, vx: 0, vy: 0, life: 12 });
+}
+
+/** Little dust clouds at a point (landing, turning, sliding on ice). */
+export function spawnDust(s: GameState, x: number, y: number, count: number, spread = 0.5): void {
+  for (let i = 0; i < count; i++) {
+    const side = count === 1 ? 0 : i % 2 ? 1 : -1;
+    s.effects.push({ kind: 'dust', x: x - 2, y: y - 3, vx: side * spread * (0.6 + i * 0.2), vy: -0.25, life: 14 + i * 2 });
+  }
 }
 
 /** Advances and expires visual effects. */

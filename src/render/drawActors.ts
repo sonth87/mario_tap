@@ -1,11 +1,15 @@
-import { MARIO_BIG_HEIGHT } from '../core/constants';
+import { MARIO_BIG_HEIGHT, TILE } from '../core/constants';
 import type { CharacterDef, CharacterSprites } from '../core/character';
 import type { Effect, Entity, Palette } from '../core/types';
 import type { GameState } from '../game/state';
 import { drawSprite } from './atlas';
 import { BULLET, GOOMBA, GOOMBA_FLAT, KOOPA, SHELL, WING } from './sprites/enemies';
 import { COIN, COIN_THIN, DEBRIS, FIREBALL, FLOWER, MUSHROOM, STAR } from './sprites/items';
+import { firebarLinks } from '../systems/hazards';
+import { columnOffset } from '../systems/lift';
+import { BIRD, BIRD_PALETTE, PIRANHA, SPIKE_CLOUD, SPIKE_CLOUD_PALETTE, SPINY } from './sprites/biome';
 import { STAR_CYCLE } from './sprites/palettes';
+import { drawText } from './text';
 
 interface Frame {
   rows: string[];
@@ -39,16 +43,48 @@ export function drawMario(ctx: CanvasRenderingContext2D, s: GameState, character
   }
   const dead = s.status === 'dying' || s.status === 'over';
   const x = m.x - (16 - m.w) / 2 - s.cameraX;
-  const y = m.y + m.h - frame.rows.length;
+  const y = m.y + m.h - frame.rows.length + Math.round(columnOffset(s, Math.floor((m.x + m.w / 2) / TILE)));
   drawSprite(ctx, frame.rows, x, y, { flipX: m.dir === -1 && !dead, flipY: frame.flipY, palette });
 }
 
+/** Draws `paint` shifted to the layer (ground / clouds) that world x belongs to. */
+function inLayer(ctx: CanvasRenderingContext2D, s: GameState, worldX: number, paint: () => void): void {
+  const dy = Math.round(columnOffset(s, Math.floor(worldX / TILE)));
+  if (!dy) return paint();
+  ctx.save();
+  ctx.translate(0, dy);
+  paint();
+  ctx.restore();
+}
+
 function drawEntity(ctx: CanvasRenderingContext2D, s: GameState, e: Entity): void {
+  inLayer(ctx, s, e.x + e.w / 2, () => paintEntity(ctx, s, e));
+}
+
+function paintEntity(ctx: CanvasRenderingContext2D, s: GameState, e: Entity): void {
   const x = e.x - (16 - e.w) / 2 - s.cameraX;
   const bottom = e.y + e.h;
   const flipY = e.mode === 'flipped';
   const walkFrame = Math.floor(s.frame / 10) % 2;
   switch (e.kind) {
+    case 'spiny':
+      drawSprite(ctx, SPINY, x, bottom - 16, { flipX: walkFrame === 1, flipY });
+      break;
+    case 'spikecloud':
+      drawSprite(ctx, SPIKE_CLOUD, x, bottom - SPIKE_CLOUD.length + Math.round(Math.sin(e.timer / 15)), { palette: SPIKE_CLOUD_PALETTE, flipY });
+      break;
+    case 'bird':
+      drawSprite(ctx, BIRD[Math.floor(s.frame / 8) % 2], x, e.y, { palette: BIRD_PALETTE, flipX: e.vx > 0, flipY });
+      break;
+    case 'piranha':
+      // Drawn before the tiles: the pipe hides whatever is still inside it.
+      drawSprite(ctx, PIRANHA[Math.floor(s.frame / 12) % 2], x, e.homeY - e.h);
+      break;
+    case 'firebar': {
+      const spin = Math.floor(s.frame / 3) % 4;
+      for (const p of firebarLinks(e)) drawSprite(ctx, FIREBALL, p.x - 4 - s.cameraX, p.y - 4, { flipX: spin % 2 === 1, flipY: spin > 1 });
+      break;
+    }
     case 'goomba':
       if (e.mode === 'squashed') drawSprite(ctx, GOOMBA_FLAT, x, bottom - GOOMBA_FLAT.length);
       else drawSprite(ctx, GOOMBA, x, bottom - 16, { flipX: walkFrame === 1, flipY });
@@ -88,13 +124,15 @@ function drawEntity(ctx: CanvasRenderingContext2D, s: GameState, e: Entity): voi
   }
 }
 
-/** Items still rising out of their block — drawn before tiles so the block hides them. */
+/** Drawn before the tiles so the block / pipe hides them: items rising out of blocks, piranha plants. */
+const behindTiles = (e: Entity): boolean => e.mode === 'emerge' || (e.kind === 'piranha' && e.mode !== 'flipped');
+
 export function drawEmerging(ctx: CanvasRenderingContext2D, s: GameState): void {
-  for (const e of s.entities) if (e.mode === 'emerge') drawEntity(ctx, s, e);
+  for (const e of s.entities) if (behindTiles(e) && (e.active || e.mode === 'emerge')) drawEntity(ctx, s, e);
 }
 
 export function drawEntities(ctx: CanvasRenderingContext2D, s: GameState): void {
-  for (const e of s.entities) if (e.mode !== 'emerge' && e.active) drawEntity(ctx, s, e);
+  for (const e of s.entities) if (!behindTiles(e) && e.active) drawEntity(ctx, s, e);
 }
 
 function drawEffect(ctx: CanvasRenderingContext2D, s: GameState, fx: Effect): void {
@@ -110,17 +148,18 @@ function drawEffect(ctx: CanvasRenderingContext2D, s: GameState, fx: Effect): vo
       ctx.fillStyle = 'rgba(255,255,255,0.8)';
       ctx.fillRect(Math.round(x + 4 - (12 - fx.life) / 2), Math.round(fx.y + 4 - (12 - fx.life) / 2), 12 - fx.life, 12 - fx.life);
       break;
+    case 'dust': {
+      const size = fx.life > 10 ? 3 : fx.life > 5 ? 2 : 1;
+      ctx.fillStyle = 'rgba(255,255,255,0.75)';
+      ctx.fillRect(Math.round(x), Math.round(fx.y), size, size);
+      break;
+    }
     case 'score':
-      ctx.font = 'bold 7px ui-monospace, Menlo, Consolas, monospace';
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = 'rgba(0,0,0,0.75)';
-      ctx.fillStyle = '#FFFFFF';
-      ctx.strokeText(fx.text ?? '', Math.round(x), Math.round(fx.y));
-      ctx.fillText(fx.text ?? '', Math.round(x), Math.round(fx.y));
+      drawText(ctx, fx.text ?? '', Math.round(x), Math.round(fx.y), { font: 'big', color: '#FFFFFF', outline: 'rgba(0,0,0,0.8)' });
       break;
   }
 }
 
 export function drawEffects(ctx: CanvasRenderingContext2D, s: GameState): void {
-  for (const fx of s.effects) drawEffect(ctx, s, fx);
+  for (const fx of s.effects) inLayer(ctx, s, fx.x, () => drawEffect(ctx, s, fx));
 }

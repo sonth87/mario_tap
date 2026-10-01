@@ -1,6 +1,8 @@
 import { GROUND_Y, TILE, VIEW_HEIGHT } from '../core/constants';
-import type { GameTheme, TreeColors } from '../core/theme';
+import type { GameTheme } from '../core/theme';
 import type { GameState } from '../game/state';
+import { bush, cactus, castle, cloud, cloudBank, hill, lobes, lobesWidth, pineTree, pyramid, roundTree, snowcap, snowyPine, triangle } from './sceneryShapes';
+import { drawWeather } from './weather';
 
 /** Deterministic 0..1 hash so scenery is stable between frames. */
 function hash(n: number): number {
@@ -8,163 +10,50 @@ function hash(n: number): number {
   return x - Math.floor(x);
 }
 
-type Painter = (ctx: CanvasRenderingContext2D, x: number, k: number) => void;
+/** Box (shape-local, world px) a cached shape is rendered into. */
+interface Box {
+  x0: number;
+  y0: number;
+  w: number;
+  h: number;
+}
+
+/** Pre-rendered shape variants per theme (a shape is many 1-px fills; drawing it is one drawImage). */
+const stamps = new WeakMap<GameTheme, Map<string, HTMLCanvasElement>>();
+
+function stamp(ctx: CanvasRenderingContext2D, theme: GameTheme, key: string, box: Box, x: number, y: number, paint: (c: CanvasRenderingContext2D) => void): void {
+  let byKey = stamps.get(theme);
+  if (!byKey) {
+    byKey = new Map();
+    stamps.set(theme, byKey);
+  }
+  let img = byKey.get(key);
+  if (!img) {
+    img = document.createElement('canvas');
+    img.width = box.w;
+    img.height = box.h;
+    const c = img.getContext('2d');
+    if (c) {
+      c.translate(-box.x0, -box.y0);
+      paint(c);
+    }
+    byKey.set(key, img);
+  }
+  ctx.drawImage(img, Math.round(x + box.x0), Math.round(y + box.y0));
+}
+
+type Painter = (x: number, k: number) => void;
 
 /**
  * One parallax layer: slot `k` sits at `k * span` in layer space; the layer scrolls at
  * `factor` × camera speed. `density` = share of slots that hold something.
  */
-function layer(ctx: CanvasRenderingContext2D, s: GameState, factor: number, span: number, density: number, seed: number, paint: Painter): void {
+function layer(s: GameState, factor: number, span: number, density: number, seed: number, paint: Painter): void {
   const shift = s.cameraX * factor;
   for (let k = Math.floor(shift / span) - 2; k * span - shift < s.viewWidth + span; k++) {
     if (hash(k + seed) > density) continue;
-    paint(ctx, Math.round(k * span - shift + hash(k + seed + 1) * span * 0.4), k + seed);
+    paint(Math.round(k * span - shift + hash(k + seed + 1) * span * 0.4), k + seed);
   }
-}
-
-/** Stepped (pixel) triangle standing on `baseY`. */
-function triangle(ctx: CanvasRenderingContext2D, cx: number, baseY: number, h: number, step: number): void {
-  for (let i = 0; i < h; i += step) ctx.fillRect(cx - i - step, baseY - h + i, 2 * (i + step), step);
-}
-
-/** Column heights of a shape: `top(x)` / `bottom(x)` in screen px for each column `x` of `[0, w)`. */
-type Column = (x: number) => number;
-
-/**
- * Fills a column-described shape in `fill`, ringed by a 1 px `outline` taken from the shape dilated
- * by one pixel (so steps between columns get joined) — the chunky edged look of the NES
- * backgrounds. The ring never overlaps the fill, so translucent colours work too.
- */
-function blob(ctx: CanvasRenderingContext2D, x0: number, w: number, top: Column, bottom: Column, fill: string, outline: string | null): void {
-  if (outline) {
-    ctx.fillStyle = outline;
-    for (let x = -1; x <= w; x++) {
-      const t = Math.min(top(x - 1), top(x), top(x + 1)) - 1;
-      const b = Math.max(bottom(x - 1), bottom(x), bottom(x + 1)) + 1;
-      if (!(b > t) || !Number.isFinite(t)) continue;
-      const inner = x >= 0 && x < w && bottom(x) > top(x);
-      if (!inner) {
-        ctx.fillRect(x0 + x, t, 1, b - t);
-        continue;
-      }
-      ctx.fillRect(x0 + x, t, 1, top(x) - t);
-      ctx.fillRect(x0 + x, bottom(x), 1, b - bottom(x));
-    }
-  }
-  ctx.fillStyle = fill;
-  for (let x = 0; x < w; x++) {
-    const t = top(x);
-    const b = bottom(x);
-    if (b > t) ctx.fillRect(x0 + x, t, 1, b - t);
-  }
-}
-
-/** A lobe row: `count` big bumps flanked by two smaller ones (the NES cloud / bush silhouette). */
-function lobes(count: number): number[] {
-  return [5, ...Array.from({ length: count }, () => 8), 5];
-}
-
-/** Placed lobes: centre x (from the shape's left edge) and radius. */
-function place(radii: number[]): Array<[cx: number, r: number]> {
-  const out: Array<[number, number]> = [];
-  let cx = radii[0];
-  radii.forEach((r, i) => {
-    if (i > 0) cx += Math.round((radii[i - 1] + r) * 0.7);
-    out.push([cx, r]);
-  });
-  return out;
-}
-
-const lobesWidth = (radii: number[]): number => {
-  const last = place(radii).at(-1);
-  return last ? last[0] + last[1] + 1 : 0;
-};
-
-/** Upper edge of overlapping round lobes whose centres sit on `cy`. */
-function lobeTop(radii: number[], cy: number): Column {
-  const placed = place(radii);
-  return (x) => {
-    let best = Infinity;
-    for (const [cx, r] of placed) {
-      const dx = x - cx;
-      if (Math.abs(dx) <= r) best = Math.min(best, Math.round(cy - Math.sqrt(r * r - dx * dx)));
-    }
-    return best;
-  };
-}
-
-/** Rounded-top hill with 45° flanks and a few dark spots, standing on the ground line. */
-function hill(ctx: CanvasRenderingContext2D, cx: number, h: number, fill: string, outline: string | null): void {
-  const r = Math.min(10, h);
-  const half = r + (h - r);
-  const top: Column = (x) => {
-    const dx = Math.abs(x - half);
-    if (dx > half) return Infinity;
-    if (dx <= r) return Math.round(GROUND_Y - h + r - Math.sqrt(r * r - dx * dx));
-    return GROUND_Y - h + r + (dx - r);
-  };
-  const x0 = cx - half;
-  blob(ctx, x0, half * 2 + 1, top, (x) => (Number.isFinite(top(x)) ? GROUND_Y + 1 : -Infinity), fill, outline);
-  if (!outline) return;
-  // Spots: small upright ovals, like the original's.
-  ctx.fillStyle = outline;
-  const spots: Array<[number, number]> = h > 24 ? [[-6, 8], [4, 12], [-12, 20], [0, 22], [10, 24]] : [[-3, 6], [3, 10]];
-  for (const [dx, dy] of spots) {
-    if (dy > h - 4) continue;
-    const sx = x0 + half + dx;
-    const sy = GROUND_Y - h + dy;
-    ctx.fillRect(sx, sy, 1, 3);
-    ctx.fillRect(sx + 1, sy - 1, 1, 5);
-    ctx.fillRect(sx + 2, sy, 1, 3);
-  }
-}
-
-/** Bush: 1–3 big lobes sitting on the ground. */
-function bush(ctx: CanvasRenderingContext2D, x: number, count: number, fill: string, outline: string | null): void {
-  const radii = lobes(count);
-  const top = lobeTop(radii, GROUND_Y - 2);
-  blob(ctx, x, lobesWidth(radii), top, (c) => (Number.isFinite(top(c)) ? GROUND_Y + 1 : -Infinity), fill, outline);
-}
-
-/** Cloud: bumpy top, rounded underside, outlined, with a pale shade along the bottom. */
-function cloud(ctx: CanvasRenderingContext2D, x: number, y: number, count: number, fill: string, shade: string | null, outline: string | null): void {
-  const radii = lobes(count);
-  const w = lobesWidth(radii);
-  const top = lobeTop(radii, y + 8);
-  const bottom: Column = (c) => {
-    if (!Number.isFinite(top(c))) return -Infinity;
-    const edge = Math.min(c, w - 1 - c);
-    return y + 14 - (edge < 4 ? 4 - edge : 0);
-  };
-  blob(ctx, x, w, top, bottom, fill, outline);
-  if (!shade) return;
-  ctx.fillStyle = shade;
-  for (let c = 3; c < w - 3; c++) ctx.fillRect(x + c, bottom(c) - 2, 1, 2);
-}
-
-function roundTree(ctx: CanvasRenderingContext2D, c: TreeColors, cx: number, h: number): void {
-  ctx.fillStyle = c.trunk;
-  ctx.fillRect(cx - 2, GROUND_Y - h, 4, h);
-  const r = Math.round(h * 0.45);
-  const top = GROUND_Y - h - r;
-  ctx.fillStyle = c.leaf;
-  for (let dy = 0; dy < r * 2; dy += 2) {
-    const half = Math.round(Math.sqrt(r * r - (dy - r) * (dy - r)));
-    ctx.fillRect(cx - half, top + dy, half * 2, 2);
-  }
-  ctx.fillStyle = c.leafLight;
-  ctx.fillRect(cx - Math.round(r * 0.5), top + Math.round(r * 0.4), Math.round(r * 0.5), Math.round(r * 0.4));
-}
-
-function pineTree(ctx: CanvasRenderingContext2D, c: TreeColors, cx: number, h: number): void {
-  ctx.fillStyle = c.trunk;
-  ctx.fillRect(cx - 2, GROUND_Y - 8, 4, 8);
-  // Slim canopy: widens 1 px every 2 rows (a plain `triangle` would be twice as wide as tall).
-  ctx.fillStyle = c.leaf;
-  const top = GROUND_Y - 6 - h;
-  for (let i = 0; i < h; i += 2) ctx.fillRect(cx - (i >> 1) - 1, top + i, (i >> 1) * 2 + 2, 2);
-  ctx.fillStyle = c.leafLight;
-  ctx.fillRect(cx - 1, top + 4, 1, Math.round(h * 0.6));
 }
 
 function sky(ctx: CanvasRenderingContext2D, s: GameState, theme: GameTheme): void {
@@ -180,33 +69,124 @@ function sky(ctx: CanvasRenderingContext2D, s: GameState, theme: GameTheme): voi
   ctx.fillRect(0, 0, s.viewWidth, VIEW_HEIGHT);
 }
 
+function mountains(ctx: CanvasRenderingContext2D, s: GameState, t: GameTheme, fill: string): void {
+  const style = t.style.mountains;
+  if (style === 'cloudbanks') {
+    layer(s, 0.15, 12 * TILE, 0.8, 101, (x, k) => {
+      const h = 28 + Math.round(hash(k) * 6) * 4;
+      stamp(ctx, t, `bank${h}`, { x0: -2 * h - 2, y0: GROUND_Y - h - 10, w: 4 * h + 4, h: h + 24 }, x, 0, (c) => cloudBank(c, 0, h, fill));
+    });
+    return;
+  }
+  if (style === 'castles') {
+    layer(s, 0.15, 13 * TILE, 0.6, 101, (x, k) => {
+      const h = 30 + Math.round(hash(k) * 6) * 5;
+      const w = 40 + Math.round(hash(k + 4) * 3) * 8;
+      const tower = Math.round(h * 0.35);
+      stamp(ctx, t, `castle${h}-${w}`, { x0: -6, y0: GROUND_Y - h - tower - 4, w: w + 12, h: h + tower + 4 }, x, 0, (c) => castle(c, 0, h, w, fill));
+    });
+    return;
+  }
+  layer(s, 0.15, 11 * TILE, 0.7, 101, (x, k) => {
+    const h = 56 + Math.round(hash(k) * 12) * 4;
+    const box = { x0: -h - 8, y0: GROUND_Y - h - 4, w: 2 * h + 16, h: h + 4 };
+    stamp(ctx, t, `${style}${h}`, box, x, 0, (c) => {
+      if (style === 'snowcaps') snowcap(c, 0, h, fill);
+      else if (style === 'pyramids') pyramid(c, 0, h, fill);
+      else {
+        c.fillStyle = fill;
+        triangle(c, 0, GROUND_Y, h, 4);
+      }
+    });
+  });
+}
+
+function trees(ctx: CanvasRenderingContext2D, s: GameState, t: GameTheme): void {
+  const colors = t.trees;
+  if (!colors) return;
+  const style = t.style.trees;
+  layer(s, 0.7, 6 * TILE, style === 'cacti' ? 0.3 : 0.35, 409, (x, k) => {
+    const pine = style === 'pines' || (style === 'mixed' && hash(k + 3) >= 0.5);
+    if (style === 'cacti') {
+      const h = 16 + Math.round(hash(k) * 8) * 2;
+      stamp(ctx, t, `cactus${h}`, { x0: -12, y0: GROUND_Y - h - 4, w: 24, h: h + 4 }, x, 0, (c) => cactus(c, colors, 0, h));
+    } else if (pine) {
+      const h = 26 + Math.round(hash(k) * 9) * 2;
+      stamp(ctx, t, `pine${h}`, { x0: -h / 2 - 4, y0: GROUND_Y - h - 8, w: h + 8, h: h + 8 }, x, 0, (c) =>
+        style === 'pines' ? snowyPine(c, colors, 0, h) : pineTree(c, colors, 0, h),
+      );
+    } else {
+      const h = 18 + Math.round(hash(k) * 11) * 2;
+      const r = Math.round(h * 0.45);
+      stamp(ctx, t, `round${h}`, { x0: -r - 4, y0: GROUND_Y - h - r - 2, w: 2 * r + 8, h: h + r + 2 }, x, 0, (c) => roundTree(c, colors, 0, h));
+    }
+  });
+}
+
 /**
- * Sky + five parallax layers, far → near: mountains (0.15), clouds (0.3), hills (0.5),
- * trees (0.7), bushes (0.85). Purely decorative — nothing here collides.
+ * Sky + layers of one theme: mountains (0.15), clouds (0.3), hills (0.5), trees (0.7), bushes (0.85).
+ * `dy` shifts the layers (not the sky) while the view pans between the ground and the clouds.
  */
-export function drawScenery(ctx: CanvasRenderingContext2D, s: GameState, theme: GameTheme, layers: boolean): void {
-  sky(ctx, s, theme);
+function paintTheme(ctx: CanvasRenderingContext2D, s: GameState, t: GameTheme, layers: boolean, weather: boolean, dy: number): void {
+  sky(ctx, s, t);
   if (!layers) return;
-  const { mountains, clouds, hills, trees, bushes } = theme;
-  const outline = theme.sceneryOutline;
-  if (mountains) {
-    ctx.fillStyle = mountains;
-    layer(ctx, s, 0.15, 11 * TILE, 0.7, 101, (c, x, k) => triangle(c, x, GROUND_Y, 56 + Math.round(hash(k) * 48), 4));
-  }
+  ctx.save();
+  ctx.translate(0, Math.round(dy));
+  paintLayers(ctx, s, t, weather);
+  ctx.restore();
+}
+
+function paintLayers(ctx: CanvasRenderingContext2D, s: GameState, t: GameTheme, weather: boolean): void {
+  const outline = t.sceneryOutline;
+  if (t.mountains) mountains(ctx, s, t, t.mountains);
+  const clouds = t.clouds;
   if (clouds) {
-    layer(ctx, s, 0.3, 7 * TILE, 0.65, 203, (c, x, k) =>
-      cloud(c, x, Math.round(2 * TILE + hash(k) * 3 * TILE), 1 + Math.floor(hash(k + 5) * 3), clouds, theme.cloudShade, outline),
-    );
+    layer(s, 0.3, 7 * TILE, 0.65, 203, (x, k) => {
+      const n = 1 + Math.floor(hash(k + 5) * 3);
+      const w = lobesWidth(lobes(n));
+      stamp(ctx, t, `cloud${n}`, { x0: -2, y0: -2, w: w + 4, h: 20 }, x, Math.round(2 * TILE + hash(k) * 3 * TILE), (c) =>
+        cloud(c, 0, 0, n, clouds, t.cloudShade, outline),
+      );
+    });
   }
+  const hills = t.hills;
   if (hills) {
-    layer(ctx, s, 0.5, 9 * TILE, 0.7, 307, (c, x, k) => hill(c, x, hash(k) < 0.5 ? 20 : 36, hills, outline));
+    layer(s, 0.5, 9 * TILE, 0.7, 307, (x, k) => {
+      const h = hash(k) < 0.5 ? 20 : 36;
+      stamp(ctx, t, `hill${h}`, { x0: -h - 3, y0: GROUND_Y - h - 3, w: 2 * h + 7, h: h + 5 }, x, 0, (c) => hill(c, 0, h, hills, outline));
+    });
   }
-  if (trees) {
-    layer(ctx, s, 0.7, 6 * TILE, 0.35, 409, (c, x, k) =>
-      hash(k + 3) < 0.5 ? roundTree(c, trees, x, 18 + Math.round(hash(k) * 22)) : pineTree(c, trees, x, 26 + Math.round(hash(k) * 18)),
-    );
-  }
+  trees(ctx, s, t);
+  const bushes = t.bushes;
   if (bushes) {
-    layer(ctx, s, 0.85, 5 * TILE, 0.6, 503, (c, x, k) => bush(c, x, 1 + Math.floor(hash(k) * 3), bushes, outline));
+    layer(s, 0.85, 5 * TILE, 0.6, 503, (x, k) => {
+      const n = 1 + Math.floor(hash(k) * 3);
+      const w = lobesWidth(lobes(n));
+      stamp(ctx, t, `bush${n}`, { x0: -2, y0: GROUND_Y - 14, w: w + 4, h: 16 }, x, 0, (c) => bush(c, 0, n, bushes, outline));
+    });
   }
+  if (weather) drawWeather(ctx, t.weather, s.frame, s.cameraX, s.viewWidth);
+}
+
+/**
+ * Background of the current biome; while a biome border crosses the screen the next biome's
+ * background fades in over it (`blend` 0 → 1). Purely decorative — nothing here collides.
+ */
+export interface SceneryBlend {
+  from: GameTheme;
+  to: GameTheme | null;
+  /** 0 → 1: how far `to` has faded in. */
+  blend: number;
+  /** Vertical shift (px) of each background's layers (ground ↔ cloud pan). */
+  dyFrom?: number;
+  dyTo?: number;
+}
+
+export function drawScenery(ctx: CanvasRenderingContext2D, s: GameState, bg: SceneryBlend, layers: boolean, weather: boolean): void {
+  paintTheme(ctx, s, bg.from, layers, weather, bg.dyFrom ?? 0);
+  if (!bg.to || bg.blend <= 0) return;
+  ctx.save();
+  ctx.globalAlpha = Math.min(1, bg.blend);
+  paintTheme(ctx, s, bg.to, layers, weather, bg.dyTo ?? 0);
+  ctx.restore();
 }

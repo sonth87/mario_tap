@@ -16,13 +16,14 @@ export interface MarioGameProps extends MarioGameOptions {
 /**
  * React wrapper around `createMarioGame`. The game is created once per mount; create-time
  * options (seed, storage, storageKey, keyboardTarget, autoPauseOnHidden, characters, character) are
- * read on mount only; the rest (muted, labels, theme / background, HUD / prompts / scenery,
- * characterButton, callbacks) update live.
+ * read on mount only; the rest (muted, labels, theme / background / biomeThemes, HUD / prompts /
+ * scenery, buttons, music, reducedMotion, callbacks) update live; biomes / speedUp from the next run.
  */
 export function MarioGame(props: MarioGameProps) {
   const {
     className, style, paused = false, ariaLabel = 'Mario runner game',
     muted, showHud, showPrompts, scenery, theme, background, labels, characterButton, soundButton, credit,
+    biomeThemes, pauseButton, music, reducedMotion, biomes, speedUp,
   } = props;
   const hostRef = useRef<HTMLDivElement>(null);
   const gameRef = useRef<GameHandle | null>(null);
@@ -51,11 +52,14 @@ export function MarioGame(props: MarioGameProps) {
     };
   }, []);
 
+  // Object props are compared by value (JSON) so inline literals do not re-run the update every render.
+  const objectKey = JSON.stringify([credit, biomeThemes, music, biomes]);
   useEffect(() => {
-    gameRef.current?.update({ muted, showHud, showPrompts, scenery, theme, background, labels, characterButton, soundButton, credit });
-    // `credit` is compared by its fields so an inline object literal does not re-run this every render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [muted, showHud, showPrompts, scenery, theme, background, labels, characterButton, soundButton, credit?.text, credit?.url, credit === null]);
+    gameRef.current?.update({
+      muted, showHud, showPrompts, scenery, theme, background, labels, characterButton, soundButton, credit,
+      biomeThemes, pauseButton, music, reducedMotion, biomes, speedUp,
+    });
+  }, [muted, showHud, showPrompts, scenery, theme, background, labels, characterButton, soundButton, pauseButton, reducedMotion, speedUp, objectKey]);
 
   useEffect(() => {
     if (paused) gameRef.current?.pause();

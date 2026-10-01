@@ -1,10 +1,13 @@
-import { BUMP_FRAMES, GROUND_ROW, TILE, VIEW_ROWS } from '../core/constants';
+import type { BiomeId } from '../core/biome';
+import { BUMP_FRAMES, GROUND_ROW, GROUND_Y, TILE, VIEW_HEIGHT, VIEW_ROWS, VINE_BOTTOM_ROW } from '../core/constants';
 import type { GameTheme } from '../core/theme';
 import { isPole, Tile } from '../core/tiles';
 import type { GameState } from '../game/state';
 import { drawSprite } from './atlas';
 import { COIN, COIN_THIN, FLOWER, MUSHROOM, STAR } from './sprites/items';
 import { BRICK, CANNON_BASE, CANNON_TOP, GROUND, GROUND_DEEP, HARD, QUESTION, USED } from './sprites/tiles';
+import { activeEdge, columnOffset, isUpper, viewRise } from '../systems/lift';
+import { CLOUD_DEEP, CLOUD_FLOOR, CLOUD_PALETTE, ICE, ICE_PALETTE, VINE } from './sprites/biome';
 import { STAR_CYCLE } from './sprites/palettes';
 import { tilePalettes, type TilePalettes } from './themePalettes';
 
@@ -47,8 +50,8 @@ function poleBaseRow(s: GameState, col: number, topRow: number): number {
   return row;
 }
 
-function drawPole(ctx: CanvasRenderingContext2D, s: GameState, f: GameTheme['flagpole'], col: number, row: number, x: number): void {
-  const y = row * TILE;
+function drawPole(ctx: CanvasRenderingContext2D, s: GameState, f: GameTheme['flagpole'], col: number, row: number, x: number, dy: number): void {
+  const y = row * TILE + dy;
   if (s.map.get(col, row) === Tile.PoleTop) {
     ctx.fillStyle = f.shaft;
     ctx.fillRect(x + 7, y + 8, 2, 8);
@@ -57,8 +60,8 @@ function drawPole(ctx: CanvasRenderingContext2D, s: GameState, f: GameTheme['fla
     ctx.fillRect(x + 4, y + 3, 8, 4);
     // The flag hangs left of the shaft: at the top, sliding with Mario, or at the bottom once used.
     let flagY = y + TILE;
-    if (s.flag?.col === col) flagY = s.flag.flagY;
-    else if (s.usedPoles.has(col)) flagY = (poleBaseRow(s, col, row) - 1) * TILE;
+    if (s.flag?.col === col) flagY = s.flag.flagY + dy;
+    else if (s.usedPoles.has(col)) flagY = (poleBaseRow(s, col, row) - 1) * TILE + dy;
     drawFlag(ctx, f, x, flagY);
     return;
   }
@@ -80,13 +83,22 @@ function bumpOffset(s: GameState, col: number, row: number): number {
   return b ? -Math.round(Math.sin((Math.PI * (BUMP_FRAMES - b.timer)) / BUMP_FRAMES) * 5) : 0;
 }
 
-function drawTile(ctx: CanvasRenderingContext2D, s: GameState, theme: GameTheme, tile: number, col: number, row: number, sx: number): void {
-  const y = row * TILE + bumpOffset(s, col, row);
+function drawTile(ctx: CanvasRenderingContext2D, s: GameState, theme: GameTheme, tile: number, col: number, row: number, sx: number, dy: number): void {
+  const y = row * TILE + bumpOffset(s, col, row) + dy;
   const pal = tilePalettes(theme);
   const shimmer = pal[SHIMMER[Math.floor(s.frame / 8) % SHIMMER.length]];
   switch (tile) {
     case Tile.Ground:
       drawSprite(ctx, row === GROUND_ROW || s.map.get(col, row - 1) !== Tile.Ground ? GROUND : GROUND_DEEP, sx, y, { palette: pal.base });
+      break;
+    case Tile.Ice:
+      drawSprite(ctx, ICE, sx, y, { palette: ICE_PALETTE });
+      break;
+    case Tile.CloudFloor:
+      drawSprite(ctx, s.map.get(col, row - 1) === Tile.CloudFloor ? CLOUD_DEEP : CLOUD_FLOOR, sx, y, { palette: CLOUD_PALETTE });
+      break;
+    case Tile.Vine:
+      drawSprite(ctx, VINE, sx, y);
       break;
     case Tile.Brick:
     case Tile.BrickCoin:
@@ -129,20 +141,55 @@ function drawTile(ctx: CanvasRenderingContext2D, s: GameState, theme: GameTheme,
       break;
     case Tile.Pole:
     case Tile.PoleTop:
-      drawPole(ctx, s, theme.flagpole, col, row, sx);
+      drawPole(ctx, s, theme.flagpole, col, row, sx, dy);
       break;
   }
 }
 
-/** Visible tiles, left to right. */
-export function drawTiles(ctx: CanvasRenderingContext2D, s: GameState, theme: GameTheme): void {
+/** Glowing lava filling the bottom of a pit column, with a rolling crest. */
+function drawLava(ctx: CanvasRenderingContext2D, lava: string, sx: number, col: number, frame: number, dy: number): void {
+  const top = VIEW_HEIGHT - 9 + dy;
+  ctx.fillStyle = lava;
+  ctx.fillRect(sx, top + 2, TILE, VIEW_HEIGHT - top - 2);
+  ctx.fillStyle = 'rgba(255,220,120,0.9)';
+  for (let i = 0; i < TILE; i += 4) {
+    const crest = Math.round(Math.sin((col * TILE + i) / 5 + frame / 10) * 1.5);
+    ctx.fillRect(sx + i, top + crest, 4, 2);
+  }
+  ctx.fillStyle = 'rgba(248,88,24,0.18)';
+  ctx.fillRect(sx, top - 14, TILE, 14);
+}
+
+/**
+ * Near a ground ↔ cloud border, the ground layer goes on under the cloud columns (it is not in the
+ * tile map there — those rows hold the clouds), and the vine reaches all the way down to it.
+ */
+function drawUnderClouds(ctx: CanvasRenderingContext2D, s: GameState, themes: Record<BiomeId, GameTheme>, col: number, sx: number): void {
+  const edge = activeEdge(s);
+  if (!edge || !isUpper(edge, col)) return;
+  const v = Math.round(viewRise(s, edge));
+  if (edge.upper === 'left' && col === edge.trigger) {
+    for (let y = (VINE_BOTTOM_ROW + 1) * TILE + v - edge.rows * TILE; y < GROUND_Y + v; y += TILE) drawSprite(ctx, VINE, sx, y);
+  }
+  if (GROUND_Y + v >= VIEW_HEIGHT) return;
+  const pal = tilePalettes(themes[edge.lowerBiome]).base;
+  drawSprite(ctx, edge.lowerBiome === 'snow' ? ICE : GROUND, sx, GROUND_Y + v, { palette: edge.lowerBiome === 'snow' ? ICE_PALETTE : pal });
+  drawSprite(ctx, GROUND_DEEP, sx, GROUND_Y + TILE + v, { palette: pal });
+}
+
+/** Visible tiles, left to right; each column in the colours of its biome, at its layer's height. */
+export function drawTiles(ctx: CanvasRenderingContext2D, s: GameState, themes: Record<BiomeId, GameTheme>): void {
   const first = Math.floor(s.cameraX / TILE);
   const last = Math.ceil((s.cameraX + s.viewWidth) / TILE);
   for (let col = first; col <= last; col++) {
     const sx = Math.round(col * TILE - s.cameraX);
+    const theme = themes[s.map.biomeAt(col)];
+    const dy = Math.round(columnOffset(s, col));
+    drawUnderClouds(ctx, s, themes, col, sx);
+    if (theme.lava && s.map.get(col, GROUND_ROW) === Tile.Empty) drawLava(ctx, theme.lava, sx, col, s.frame, dy);
     for (let row = 0; row < VIEW_ROWS; row++) {
       const tile = s.map.get(col, row);
-      if (tile !== Tile.Empty) drawTile(ctx, s, theme, tile, col, row, sx);
+      if (tile !== Tile.Empty) drawTile(ctx, s, theme, tile, col, row, sx, dy);
     }
   }
 }

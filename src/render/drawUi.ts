@@ -2,15 +2,16 @@ import type { CharacterDef } from '../core/character';
 import type { GameCredit, GameLabels } from '../core/options';
 import type { GameTheme } from '../core/theme';
 import { drawSprite } from './atlas';
+import { drawText } from './text';
 import { creditRect, pickerLayout, portraitRect, soundRect, type Rect } from './uiLayout';
-
-const FONT = 'ui-monospace, Menlo, Consolas, monospace';
 
 export interface UiView {
   characters: CharacterDef[];
   character: CharacterDef;
   pickerOpen: boolean;
   muted: boolean;
+  /** Paused by the player (pause button / Esc / P). */
+  paused: boolean;
   /** Portrait is clickable (before the first press / on game over). */
   canChangeCharacter: boolean;
   frame: number;
@@ -56,6 +57,21 @@ export function drawPortrait(ctx: CanvasRenderingContext2D, viewWidth: number, u
   }
 }
 
+/** Pause / play button (takes the portrait's place during a run, when the portrait is inactive anyway). */
+export function drawPauseButton(ctx: CanvasRenderingContext2D, viewWidth: number, paused: boolean, withSound: boolean): void {
+  const r = portraitRect(viewWidth, withSound);
+  roundButton(ctx, r, 'rgba(255,255,255,0.35)');
+  ctx.fillStyle = '#FFFFFF';
+  const x = r.x + 5;
+  const y = r.y + 4.5;
+  if (paused) {
+    for (let i = 0; i < 4; i++) ctx.fillRect(x + 1 + i, y + i, 1, 7 - 2 * i);
+  } else {
+    ctx.fillRect(x, y, 2, 7);
+    ctx.fillRect(x + 4, y, 2, 7);
+  }
+}
+
 /** Speaker button (strike-through bar when muted). */
 export function drawSoundButton(ctx: CanvasRenderingContext2D, viewWidth: number, muted: boolean): void {
   const r = soundRect(viewWidth);
@@ -76,29 +92,17 @@ export function drawSoundButton(ctx: CanvasRenderingContext2D, viewWidth: number
   }
 }
 
-function label(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, size: number, color: string, theme: GameTheme): void {
-  ctx.font = `bold ${size}px ${FONT}`;
-  ctx.lineJoin = 'round';
-  ctx.lineWidth = 2.5;
-  ctx.strokeStyle = theme.textOutline;
-  ctx.strokeText(text, x, y);
-  ctx.fillStyle = color;
-  ctx.fillText(text, x, y);
-}
-
 /** Modal character picker: one card per character (big sprite + name), current one highlighted. */
 export function drawPicker(ctx: CanvasRenderingContext2D, viewWidth: number, ui: UiView, theme: GameTheme, labels: GameLabels): void {
   const { panel, cards, compact } = pickerLayout(viewWidth, ui.characters.length);
   box(ctx, panel, theme.panel, 'rgba(255,255,255,0.25)', 5);
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
-  label(ctx, labels.chooseCharacter, panel.x + panel.w / 2, panel.y + 7, 8, theme.textAccent, theme);
+  drawText(ctx, labels.chooseCharacter, panel.x + panel.w / 2, panel.y + 5, { font: 'big', color: theme.textAccent, outline: theme.textOutline, align: 'center' });
   ui.characters.forEach((c, i) => {
     const r = cards[i];
     const selected = c.id === ui.character.id;
     box(ctx, r, selected ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.08)', selected ? theme.textAccent : null);
     drawSprite(ctx, compact ? c.sprites.smallStand : c.sprites.bigStand, r.x + (r.w - 16) / 2, r.y + (compact ? 2 : 3), { palette: c.palette });
-    label(ctx, c.name, r.x + r.w / 2, r.y + r.h - 10, 6, selected ? theme.textAccent : theme.text, theme);
+    drawText(ctx, c.name, r.x + r.w / 2, r.y + r.h - 8, { font: 'mini', color: selected ? theme.textAccent : theme.text, outline: theme.textOutline, align: 'center' });
   });
 }
 
@@ -131,11 +135,8 @@ export function drawCredit(ctx: CanvasRenderingContext2D, credit: GameCredit, cl
   ctx.save();
   ctx.globalAlpha = clickable ? 1 : 0.8;
   drawSprite(ctx, CAT_MARK, r.x + 2, r.y + 1, { palette: markPalette(theme.hud.credit) });
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'middle';
-  ctx.font = `bold 6.6px ${FONT}`;
+  const w = drawText(ctx, credit.text, r.x + 12, r.y + 2, { font: 'mini', color: theme.hud.credit });
   ctx.fillStyle = theme.hud.credit;
-  ctx.fillText(credit.text, r.x + 12, r.y + r.h / 2 + 0.5);
-  if (clickable && credit.url) ctx.fillRect(r.x + 12, r.y + r.h - 0.5, r.w - 13, 0.7);
+  if (clickable && credit.url) ctx.fillRect(r.x + 12, r.y + r.h - 2, w, 1);
   ctx.restore();
 }

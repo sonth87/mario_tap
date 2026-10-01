@@ -1,4 +1,4 @@
-import { FLAG_HOLD_FRAMES, FLAG_POINTS, FLAG_SLIDE_SPEED, GROUND_Y, TILE } from '../core/constants';
+import { FLAG_HOLD_FRAMES, FLAG_POINTS, FLAG_SLIDE_SPEED, GROUND_Y, MAX_SPEED_LEVEL, RUN_SPEED, SPEED_STEP, TILE } from '../core/constants';
 import { isPole, Tile } from '../core/tiles';
 import type { GameState } from '../game/state';
 
@@ -41,6 +41,7 @@ export function tryGrabFlag(s: GameState): boolean {
     const heightTiles = Math.max(0, Math.floor((GROUND_Y - feet) / TILE));
     const points = flagPoints(heightTiles);
     s.bonus += points;
+    s.flags += 1;
     s.effects.push({ kind: 'score', x: col * TILE + 12, y: feet - m.h, vx: 0, vy: -0.4, life: 70, text: `+${points}` });
     s.usedPoles.add(col);
     m.x = col * TILE + POLE_CENTRE - m.w;
@@ -73,4 +74,17 @@ export function stepFlag(s: GameState): void {
   m.grounded = s.map.get(f.col, f.baseY / TILE) !== Tile.Empty;
   m.dir = 1;
   s.flag = null;
+  speedUp(s);
+}
+
+/** A milestone was passed: one speed level up (when enabled), Mario runs on at the new speed. */
+export function speedUp(s: GameState): void {
+  const m = s.mario;
+  if (s.speedUp && s.speedLevel < MAX_SPEED_LEVEL) {
+    s.speedLevel += 1;
+    s.speedFrame = s.frame;
+    s.events.push('speedUp');
+  }
+  m.speed = RUN_SPEED + SPEED_STEP * s.speedLevel;
+  m.vx = m.dir * m.speed;
 }

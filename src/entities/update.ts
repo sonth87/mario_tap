@@ -1,5 +1,6 @@
 import {
   ACTIVATION_MARGIN,
+  BIRD_AMPLITUDE,
   DESPAWN_MARGIN,
   FIREBALL_BOUNCE,
   FIREBALL_GRAVITY,
@@ -18,6 +19,8 @@ import {
 import type { Entity } from '../core/types';
 import type { GameState } from '../game/state';
 import { atLedge, moveX, moveY } from '../physics/body';
+import { updateFirebar, updatePiranha } from '../systems/hazards';
+import { sameLayer } from '../systems/lift';
 import { spawnPuff } from '../systems/rewards';
 import { toKoopa } from './factory';
 
@@ -98,10 +101,31 @@ export function updateEntity(s: GameState, e: Entity): void {
     if (e.x > s.cameraX + s.viewWidth + ACTIVATION_MARGIN) return;
     e.active = true;
   }
+  // Up in the clouds while Mario is still on the ground (or the other way round): wait.
+  if (!sameLayer(s, e.x + e.w / 2)) return;
   if (updateScripted(e)) return;
   switch (e.kind) {
     case 'goomba':
+    case 'spiny':
       walk(s, e, false);
+      break;
+    case 'piranha':
+      updatePiranha(s, e);
+      break;
+    case 'firebar':
+      updateFirebar(e);
+      break;
+    case 'spikecloud':
+      // Floats along the cloud floor and turns at walls and at the edge of a gap (never falls).
+      if (atLedge(e, s.map)) e.vx = -e.vx;
+      if (moveX(e, s.map, e.vx)) e.vx = -e.vx;
+      e.timer += 1;
+      break;
+    case 'bird':
+      // Flies straight at the player (through everything) with a gentle bob.
+      e.timer += 1;
+      e.x += e.vx;
+      e.y = e.homeY + Math.round(Math.sin(e.timer / 12) * BIRD_AMPLITUDE);
       break;
     case 'koopa':
       updateKoopa(s, e);

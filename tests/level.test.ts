@@ -1,4 +1,5 @@
-import { TILE } from '../src/core/constants';
+import type { BiomeId } from '../src/core/biome';
+import { MAX_RUN_SPEED, RUN_SPEED, TILE } from '../src/core/constants';
 import { createRng } from '../src/core/rng';
 import { parseChunk } from '../src/world/chunkParser';
 import { getChunks } from '../src/world/chunks';
@@ -28,9 +29,9 @@ test('parser rejects wide pits, unknown chars and ragged rows', () => {
   assert.throws(() => parseChunk({ id: 'rag', tier: 0, rows: ['....', '#####'] }), /wide/);
 });
 
-function build(seed: number, cols: number): { map: TileMap; gen: LevelGenerator; spawns: number } {
+function build(seed: number, cols: number, biomes?: BiomeId[]): { map: TileMap; gen: LevelGenerator; spawns: number } {
   const map = new TileMap();
-  const gen = new LevelGenerator(map, createRng(seed), 0);
+  const gen = new LevelGenerator(map, createRng(seed), 0, biomes);
   gen.runway(6);
   return { map, gen, spawns: gen.ensure(cols).length };
 }
@@ -48,14 +49,29 @@ test('tiers unlock with distance and cap at 3', () => {
   assert.equal(gen.tierAt(100000), 3);
 });
 
-test('long generated stretches are passable for small and big Mario', () => {
+function stretch(seed: number, cols: number, biomes: BiomeId[]): ColumnMap {
+  const { map } = build(seed, cols, biomes);
+  return new ColumnMap(Array.from({ length: cols }, (_, c) => Uint8Array.from({ length: VIEW_ROWS }, (_, r) => map.get(c, r))));
+}
+
+test('long generated stretches are passable for small and big Mario, slow and fast', () => {
   for (const seed of [1, 7, 99]) {
     const cols = 1200;
-    const { map } = build(seed, cols);
-    const columns = Array.from({ length: cols }, (_, c) => Uint8Array.from({ length: VIEW_ROWS }, (_, r) => map.get(c, r)));
-    const cm = new ColumnMap(columns);
+    const cm = stretch(seed, cols, ['grass']);
+    for (const speed of seed === 1 ? [RUN_SPEED, MAX_RUN_SPEED] : [RUN_SPEED]) {
+      assert.ok(solve(cm, false, (cols - 30) * TILE, speed).passable, `seed ${seed} small @${speed}`);
+      assert.ok(solve(cm, true, (cols - 30) * TILE, speed).passable, `seed ${seed} big @${speed}`);
+    }
+  }
+});
+
+test('long icy stretches (snow biome) are passable too', () => {
+  for (const seed of [31]) {
+    const cols = 360;
+    const cm = stretch(seed, cols, ['snow']);
+    assert.ok(cm.get(5, 11) === 19, 'snow ground is ice');
     assert.ok(solve(cm, false, (cols - 30) * TILE).passable, `seed ${seed} small`);
-    assert.ok(solve(cm, true, (cols - 30) * TILE).passable, `seed ${seed} big`);
+    assert.ok(solve(cm, true, (cols - 30) * TILE, MAX_RUN_SPEED).passable, `seed ${seed} big fast`);
   }
 });
 

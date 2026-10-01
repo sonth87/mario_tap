@@ -1,9 +1,10 @@
 /** Standalone demo: the whole game from the framework-agnostic entry, no React, no host app. */
-import { createMarioGame, type ThemeName } from '../src';
+import { createMarioGame, type BiomeId, type ThemeName } from '../src';
 
 const stage = document.getElementById('stage') as HTMLElement;
 const themeSelect = document.getElementById('theme') as HTMLSelectElement;
 const scenery = document.getElementById('scenery') as HTMLInputElement;
+const biomes = document.getElementById('biomes') as HTMLSelectElement;
 
 const game = createMarioGame(stage, {
   storageKey: 'mario-runner-demo:best',
@@ -15,6 +16,12 @@ const game = createMarioGame(stage, {
 themeSelect.addEventListener('change', () => {
   game.update({ theme: themeSelect.value as ThemeName });
   themeSelect.blur(); // keep Space for the game, not the dropdown
+});
+biomes.addEventListener('change', () => {
+  // Biomes apply from the next run: restart so the choice shows at once.
+  game.update({ biomes: biomes.value === 'all' ? true : [biomes.value as BiomeId] });
+  game.restart();
+  biomes.blur();
 });
 scenery.addEventListener('change', () => {
   game.update({ scenery: scenery.checked });

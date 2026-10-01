@@ -52,6 +52,8 @@ export function parseChunk(def: ChunkDef): ParsedChunk {
       const ch = line[x];
       if (isSpawnChar(ch)) {
         spawns.push({ kind: SPAWN_LEGEND[ch], dx: x, row });
+        // A fire bar turns around a solid hub block.
+        if (ch === 'x') columns[x][row] = Tile.Used;
         continue;
       }
       const tile = TILE_LEGEND[ch];

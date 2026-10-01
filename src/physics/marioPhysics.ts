@@ -2,12 +2,15 @@ import {
   COYOTE_FRAMES,
   GRAVITY,
   GROUND_ROW,
+  ICE_GRIP_FACTOR,
+  ICE_GRIP_FRAMES,
+  ICE_SPEED_FACTOR,
   JUMP_BUFFER_FRAMES,
   JUMP_VELOCITY,
   MAX_FALL_SPEED,
-  RUN_SPEED,
   TILE,
 } from '../core/constants';
+import { Tile } from '../core/tiles';
 import type { MarioBody } from '../core/types';
 import type { TileQuery } from '../world/tileMap';
 import { moveXHit, moveY, standsOnGround } from './body';
@@ -21,6 +24,34 @@ export interface MarioStepResult {
   ceiling: { col: number; row: number } | null;
 }
 
+/** True when Mario stands on at least one ice tile. */
+export function onIce(m: MarioBody, map: TileQuery): boolean {
+  if (!m.grounded) return false;
+  const row = Math.floor((m.y + m.h + 1) / TILE);
+  for (let c = Math.floor(m.x / TILE); c <= Math.floor((m.x + m.w - 0.001) / TILE); c++) if (map.get(c, row) === Tile.Ice) return true;
+  return false;
+}
+
+/**
+ * Horizontal velocity for this frame. Normal ground: run speed. Ice: faster, but slow while
+ * scrambling for grip after a wall. In the air Mario keeps his speed (so a jump made while slipping
+ * is a short one), pointing where he faces — off ice nothing changes from the classic constant run.
+ */
+function runVelocity(m: MarioBody, ice: boolean, grounded: boolean): number {
+  if (ice) {
+    if (m.grip > 0) {
+      m.grip -= 1;
+      return m.dir * m.speed * ICE_GRIP_FACTOR;
+    }
+    return m.dir * m.speed * ICE_SPEED_FACTOR;
+  }
+  if (grounded) {
+    m.grip = 0;
+    return m.dir * m.speed;
+  }
+  return m.dir * (Math.abs(m.vx) || m.speed);
+}
+
 /**
  * One 60 Hz frame of Mario's movement: auto-run, reverse on walls, fixed-height jump.
  * Pure (no game state) so the level validator can replay it headlessly.
@@ -29,6 +60,9 @@ export interface MarioStepResult {
  */
 export function stepMarioBody(m: MarioBody, map: TileQuery, pressed: boolean, leftWall: number): MarioStepResult {
   const result: MarioStepResult = { jumped: false, turned: false, landed: false, ceiling: null };
+  const ice = onIce(m, map);
+  // Speed is decided by what Mario stood on at the start of the frame (a jump frame counts as ground).
+  const groundedAtStart = m.grounded || m.coyote > 0;
 
   if (pressed) m.jumpBuffer = JUMP_BUFFER_FRAMES;
   if (m.jumpBuffer > 0 && (m.grounded || m.coyote > 0)) {
@@ -45,17 +79,12 @@ export function stepMarioBody(m: MarioBody, map: TileQuery, pressed: boolean, le
   // stairs) turns Mario around. Flying into the side of a floating block only stops him for that
   // frame: he drops past it and keeps his direction (user rule).
   const wasGrounded = m.grounded;
-  const hit = moveXHit(m, map, m.dir * RUN_SPEED);
-  if (hit && (wasGrounded || standsOnGround(map, hit, GROUND_ROW))) {
-    m.dir = m.dir === 1 ? -1 : 1;
-    result.turned = true;
-  }
+  m.vx = runVelocity(m, ice, groundedAtStart);
+  const hit = moveXHit(m, map, m.vx);
+  if (hit && (wasGrounded || standsOnGround(map, hit, GROUND_ROW))) turn(m, ice, result);
   if (m.x < leftWall) {
     m.x = leftWall;
-    if (m.dir === -1) {
-      m.dir = 1;
-      result.turned = true;
-    }
+    if (m.dir === -1) turn(m, ice, result);
   }
 
   const y = moveY(m, map, GRAVITY, MAX_FALL_SPEED);
@@ -68,4 +97,12 @@ export function stepMarioBody(m: MarioBody, map: TileQuery, pressed: boolean, le
     result.ceiling = { col, row: y.ceilingRow };
   }
   return result;
+}
+
+/** Reverse direction; on ice Mario then has to find his grip again. */
+function turn(m: MarioBody, ice: boolean, result: MarioStepResult): void {
+  m.dir = m.dir === 1 ? -1 : 1;
+  m.vx = -m.vx;
+  if (ice) m.grip = ICE_GRIP_FRAMES;
+  result.turned = true;
 }
